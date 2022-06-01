@@ -4,13 +4,14 @@ from typing import Optional
 
 def convert_image(
         input_path: str, output_path: str,
-        input_colorspace: str, output_colorspace: str,
+        colorspace: Optional[tuple[str, str]] = None,
         look: Optional[str] = None,
         image_size: Optional[tuple[int, int]] = None,
         compression: Optional[str] = None) -> None:
-    command = [
-        'oiiotool', '-v', input_path,
-        '--colorconvert', input_colorspace, output_colorspace]
+    command = ['oiiotool', '-v', input_path]
+    if colorspace is not None:
+        command.append('--colorconvert')
+        command.extend(colorspace)
     if look is not None:
         command.extend(['--ociolook', look])
     if image_size is not None:
