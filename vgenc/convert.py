@@ -7,7 +7,8 @@ def convert_image(
         colorspace: Optional[tuple[str, str]] = None,
         look: Optional[str] = None,
         image_size: Optional[tuple[int, int]] = None,
-        compression: Optional[str] = None) -> None:
+        compression: Optional[str] = None,
+        **_) -> None:
     command = ['oiiotool', '-v', input_path]
     if colorspace is not None:
         command.append('--colorconvert')
@@ -26,7 +27,8 @@ def convert_image(
 def convert_image_sequence_to_movie(
         input_path: str | list[str], output_path: str, framerate: int = 24,
         start_number: int = 1, is_stereo: bool = False,
-        codec: str = 'mjpeg', quality: int = 2) -> None:
+        codec: str = 'mjpeg', quality: int = 2,
+        **_) -> None:
     """Convert image sequence to movie using ffmpeg
 
     input_path: set frame number with printf syntax padding (%04d, %06d, etc).
