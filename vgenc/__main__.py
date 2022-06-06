@@ -35,6 +35,8 @@ parser.add_argument(
 parser.add_argument(
     '-ac', '--audio-codec', required=False, metavar='name')
 parser.add_argument(
+    '-aq', '--audio-quality', required=False, type=int, metavar='number')
+parser.add_argument(
     '-ab', '--audio-bitrate', required=False, metavar='value')
 parser.add_argument(
     '--resize', required=False, type=int, nargs=2, metavar=('x', 'y'))

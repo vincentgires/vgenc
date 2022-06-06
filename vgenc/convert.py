@@ -52,6 +52,7 @@ def convert_movie(
         video_bitrate: Optional[str] = None,
         constrained_quality: Optional[int] = None,
         audio_codec: Optional[str] = None,
+        audio_quality: Optional[int] = None,
         audio_bitrate: Optional[str] = None,
         resize: Optional[tuple[int, int]] = None,
         is_stereo: bool = False,
@@ -96,6 +97,8 @@ def convert_movie(
     if audio_codec is not None:
         ac = ffmpeg_audio_codecs.get(audio_codec, audio_codec)
         command.extend(['-c:a', ac])
+    if audio_quality is not None:
+        command.extend(['-q:a', str(audio_quality)])
     if audio_bitrate is not None:
         command.extend(['-b:a', str(audio_bitrate)])
     command.extend([output_path, '-y'])
