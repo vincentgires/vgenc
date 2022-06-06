@@ -40,6 +40,8 @@ parser.add_argument(
     '--resize', required=False, type=int, nargs=2, metavar=('x', 'y'))
 parser.add_argument(
     '--is-stereo', action='store_true', required=False)
+parser.add_argument(
+    '--two-pass', action='store_true', required=False)
 
 args = parser.parse_args()
 match args.command:

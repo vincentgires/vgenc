@@ -1,3 +1,4 @@
+import os
 import subprocess
 from typing import Optional
 
@@ -41,7 +42,6 @@ def convert_image(
     subprocess.run(command)
 
 
-# TODO: two pass encoding
 def convert_movie(
         input_path: str | list[str],
         output_path: str,
@@ -55,6 +55,7 @@ def convert_movie(
         audio_bitrate: Optional[str] = None,
         resize: Optional[tuple[int, int]] = None,
         is_stereo: bool = False,
+        two_pass: bool = False,
         **_) -> None:
     """Convert to movie using ffmpeg
 
@@ -80,15 +81,22 @@ def convert_movie(
         # to enable constant quality instead of constrained quality, bitrate
         # should be set to 0.
         command.extend(['-b:v', str(video_bitrate)])
-    if audio_codec is not None:
-        ac = ffmpeg_audio_codecs.get(audio_codec, audio_codec)
-        command.extend(['-c:a', ac])
-    if audio_bitrate is not None:
-        command.extend(['-b:a', str(audio_bitrate)])
     if resize is not None:
         x, y = resize
         command.extend(['-vf', f'{x}:{y}'])
     if is_stereo:
         command.extend(['-filter_complex', 'hstack,stereo3d=sbsl:arcg'])
+    if two_pass:
+        first_pass_command = command.copy()
+        first_pass_command.extend([
+            '-pass', '1', '-an', '-f', 'null',
+            'NUL' if os.name == 'nt' else '/dev/null'])
+        subprocess.run(first_pass_command)
+        command.extend(['-pass', '2'])
+    if audio_codec is not None:
+        ac = ffmpeg_audio_codecs.get(audio_codec, audio_codec)
+        command.extend(['-c:a', ac])
+    if audio_bitrate is not None:
+        command.extend(['-b:a', str(audio_bitrate)])
     command.extend([output_path, '-y'])
     subprocess.run(command)
