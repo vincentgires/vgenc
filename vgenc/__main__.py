@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-from .convert import convert_image, convert_image_sequence_to_movie
+from .convert import convert_image, convert_movie
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
