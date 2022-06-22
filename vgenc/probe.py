@@ -16,6 +16,18 @@ def get_movie_size(input_path: str, stream_index: int = 0) -> tuple[int, int]:
     return size
 
 
+def get_movie_duration(input_path: str, stream_index: int = 0) -> int:
+    command = [
+        'ffprobe', input_path, '-count_packets',
+        '-show_entries', 'stream=nb_read_packets', '-print_format', 'json']
+    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
+        output, errors = p.communicate()
+        output = output.decode()
+        output = json.loads(output)
+        value = output['streams'][stream_index]['nb_read_packets']
+    return int(value)
+
+
 def get_image_size(input_path: str) -> tuple[int, int]:
     command = ['iinfo', input_path]
     with Popen(command, stdout=PIPE, stderr=PIPE) as p:
