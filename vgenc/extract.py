@@ -2,7 +2,8 @@ import subprocess
 
 
 def extract_frames_from_movie(
-        input_path: str, output_path: str, frames: int | list[int]) -> None:
+        input_path: str, output_path: str, frames: int | list[int],
+        **_) -> None:
     """Extract frames from movie using ffmpeg
 
     output_path: set frame number with printf syntax padding (%04d, %06d, etc).

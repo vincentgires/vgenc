@@ -2,10 +2,11 @@
 
 import argparse
 from .convert import convert_image, convert_movie
+from .extract import extract_frames_from_movie
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    'command', help='image, movie')
+    'command', help='image, movie, extract')
 parser.add_argument(
     '-i', '--input-path', required=True, nargs='+', metavar='path')
 parser.add_argument(
@@ -44,12 +45,20 @@ parser.add_argument(
     '--is-stereo', action='store_true', required=False)
 parser.add_argument(
     '--two-pass', action='store_true', required=False)
+# Extract frames
+parser.add_argument(
+    '--frames', required=False, nargs='+', type=int, metavar='number')
 
 args = parser.parse_args()
+if len(args.input_path) == 1:
+    args.input_path = args.input_path[0]
+
 match args.command:
     case 'image':
         convert_image(**vars(args))
     case 'movie':
         convert_movie(**vars(args))
+    case 'extract':
+        extract_frames_from_movie(**vars(args))
     case _:
         print('No command are specified')
