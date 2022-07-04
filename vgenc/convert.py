@@ -103,3 +103,38 @@ def convert_movie(
         command.extend(['-b:a', str(audio_bitrate)])
     command.extend([output_path, '-y'])
     subprocess.run(command)
+
+
+def convert_to_gif(
+        input_path: str | list[str],
+        output_path: str,
+        fps: int = 15,
+        optimize: bool = True,
+        depth: int = 8,
+        bounce: bool = False):
+    """Convert images to gif
+
+    input_path can be folder or list of image paths."""
+
+    if isinstance(input_path, str):
+        if os.path.isdir(input_path):
+            input_path = [
+                os.path.join(input_path, i) for i in os.listdir(input_path)]
+            input_path.sort()
+
+    fps = '1x{}'.format(fps)
+    command = [
+        'magick',
+        '-delay', fps,
+        '-loop', '0']
+    command.extend(input_path)
+    if bounce:
+        command.extend(['-duplicate', '1,-2-1'])
+    if optimize:
+        command.extend(['-layers', 'optimize'])
+    if depth:
+        command.extend(['-depth', str(depth)])
+    if not output_path.endswith('.gif'):
+        output_path += '.gif'
+    command.append(output_path)
+    subprocess.run(command)
