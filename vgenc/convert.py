@@ -57,11 +57,61 @@ def convert_movie(
         resize: Optional[tuple[int, int]] = None,
         is_stereo: bool = False,
         two_pass: bool = False,
+        video_filter: Optional[dict | list[dict]] = None,
+        draw_text: Optional[dict | list[dict]] = None,
         **_) -> None:
     """Convert to movie using ffmpeg
 
     input_path: set frame number with printf syntax padding (%04d, %06d, etc).
     """
+
+    def build_drawtext(
+            fontfile: str,
+            fontsize: str,
+            fontcolor: str,
+            text: str,
+            x: int,
+            y: int,
+            start_number: Optional[int] = None):
+        content = [
+            f'fontfile={fontfile}',
+            f'text={text}',
+            f'fontsize={fontsize}',
+            f'fontcolor={fontcolor}',
+            f'x={x}',
+            f'y={y}']
+        if start_number is not None:
+            content.extend([f'start_number={start_number}'])
+        return f'drawtext={":".join(content)}'
+
+    def build_filter(command: list):
+        args = []
+        if is_stereo:
+            args.append('hstack,stereo3d=sbsl:arcg')
+        if resize is not None:
+            x, y = resize
+            args.append(f'scale={x}:{y}')
+        if video_filter is not None:
+            # Allow dict for convenience but also list of dict because order
+            # can be important
+            if isinstance(video_filter, dict):
+                filters = [video_filter]
+            else:
+                filters = video_filter
+            for f in filters:
+                args.extend([f'{k}={v}' for k, v in f.items()])
+        if draw_text is not None:
+            # Can draw a single text with dict or multiple one with list of
+            # dict
+            if isinstance(draw_text, dict):
+                texts = [draw_text]
+            else:
+                texts = draw_text
+            for t in texts:
+                args.append(build_drawtext(**t))
+        if args:
+            command.extend(['-filter_complex', ','.join(args)])
+
     if isinstance(input_path, str):
         input_path = [input_path]
     command = ['ffmpeg']
@@ -82,11 +132,7 @@ def convert_movie(
         # to enable constant quality instead of constrained quality, bitrate
         # should be set to 0.
         command.extend(['-b:v', str(video_bitrate)])
-    if resize is not None:
-        x, y = resize
-        command.extend(['-vf', f'{x}:{y}'])
-    if is_stereo:
-        command.extend(['-filter_complex', 'hstack,stereo3d=sbsl:arcg'])
+    build_filter(command)
     if two_pass:
         first_pass_command = command.copy()
         first_pass_command.extend([
@@ -138,3 +184,28 @@ def convert_to_gif(
         output_path += '.gif'
     command.append(output_path)
     subprocess.run(command)
+
+
+if __name__ == '__main__':
+    # Example with text and filter:
+    convert_movie(
+        input_path='input.mkv',
+        output_path='output.mkv',
+        draw_text=[
+            {'fontfile': 'font.ttf',
+             'text': 'frame %{frame_num}',
+             'x': 10,
+             'y': 10,
+             'fontsize': 20,
+             'fontcolor': 'white',
+             'start_number': 100},
+            {'fontfile': 'font.ttf',
+             'text': 'description',
+             'x': 10,
+             'y': 30,
+             'fontsize': 20,
+             'fontcolor': 'white'}],
+        video_filter={
+            'scale': '1280x720',
+            'pad': 'in_w:in_h+100:0:-50'}
+    )
