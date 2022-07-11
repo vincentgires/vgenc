@@ -70,8 +70,8 @@ def convert_movie(
             fontsize: str,
             fontcolor: str,
             text: str,
-            x: int,
-            y: int,
+            x: int | str,
+            y: int | str,
             start_number: Optional[int] = None):
         content = [
             f'fontfile={fontfile}',
