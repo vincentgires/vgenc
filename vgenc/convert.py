@@ -59,6 +59,7 @@ def convert_movie(
         two_pass: bool = False,
         video_filter: Optional[dict | list[dict]] = None,
         draw_text: Optional[dict | list[dict]] = None,
+        metadata: Optional[dict] = None,
         **_) -> None:
     """Convert to movie using ffmpeg
 
@@ -147,6 +148,11 @@ def convert_movie(
         command.extend(['-q:a', str(audio_quality)])
     if audio_bitrate is not None:
         command.extend(['-b:a', str(audio_bitrate)])
+    if metadata is not None:
+        command.extend(['-movflags', 'use_metadata_tags'])
+        for k, v in metadata.items():
+            if v is not None:
+                command.extend(['-metadata', f'{k}={v}'])
     command.extend([output_path, '-y'])
     subprocess.run(command)
 
