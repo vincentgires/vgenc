@@ -1,6 +1,8 @@
 import os
+import re
 import subprocess
 from typing import Optional
+from .probe import get_image_size
 
 ffmpeg_video_codecs = {
     'copy': 'copy',
@@ -47,6 +49,8 @@ def convert_movie(
         output_path: str,
         framerate: Optional[int] = None,
         start_number: Optional[int] = None,
+        missing_frames: Optional[str] = None,
+        frame_range: Optional[tuple[int, int]] = None,
         video_codec: Optional[str] = None,
         video_quality: Optional[int] = None,
         video_bitrate: Optional[str] = None,
@@ -64,7 +68,56 @@ def convert_movie(
     """Convert to movie using ffmpeg
 
     input_path: set frame number with printf syntax padding (%04d, %06d, etc).
+    missing_frames: previous, black, checkerboard.
+    frame_range: needed for missing frames, first item overrides start_number.
     """
+
+    if isinstance(input_path, str):
+        input_path = [input_path]
+    if frame_range is not None:
+        start_number = frame_range[0]
+
+    def generate_missing_frames() -> list:
+        if missing_frames is None:
+            return
+
+        def replace_frame_padding(name: str, frame: int, padding: int) -> str:
+            return name.replace(f'%0{padding}d', str(frame).zfill(padding))
+
+        matched = re.match(r'.*?%(.*)d', input_path[0])
+        if matched is None:
+            return
+        padding = int(matched.group(1))
+        missing_files = []
+        for frame in range(frame_range[0], frame_range[1] + 1):
+            target_filepath = replace_frame_padding(
+                input_path[0], frame, padding)
+            if os.path.exists(target_filepath):
+                continue
+            match missing_frames:
+                case 'previous':
+                    for f in reversed(range(start_number, frame)):
+                        looked_file = replace_frame_padding(
+                            input_path[0], f, padding)
+                        if os.path.exists(looked_file):
+                            os.symlink(looked_file, target_filepath)
+                            break
+                case 'black' | 'checkerboard' as c:
+                    # Assume first frame exists and has correct resolution
+                    get_first_file = replace_frame_padding(
+                        input_path[0], start_number, padding)
+                    x, y = get_image_size(get_first_file)
+                    bg_args = {
+                        'black': 'canvas:black',
+                        'checkerboard': 'pattern:checkerboard'}
+                    subprocess.run([
+                        'magick',
+                        '-size',
+                        f'{x}x{y}',
+                        bg_args[c],
+                        target_filepath])
+            missing_files.append(target_filepath)
+        return missing_files
 
     def build_drawtext(
             fontfile: str,
@@ -73,7 +126,7 @@ def convert_movie(
             text: str,
             x: int | str,
             y: int | str,
-            start_number: Optional[int] = None):
+            start_number: Optional[int] = None) -> str:
         content = [
             f'fontfile={fontfile}',
             f'text={text}',
@@ -85,7 +138,7 @@ def convert_movie(
             content.extend([f'start_number={start_number}'])
         return f'drawtext={":".join(content)}'
 
-    def build_filter(command: list):
+    def build_filter(command: list) -> None:
         args = []
         if is_stereo:
             args.append('hstack,stereo3d=sbsl:arcg')
@@ -113,8 +166,6 @@ def convert_movie(
         if args:
             command.extend(['-filter_complex', ','.join(args)])
 
-    if isinstance(input_path, str):
-        input_path = [input_path]
     command = ['ffmpeg']
     for i in input_path:
         if framerate is not None:
@@ -153,8 +204,12 @@ def convert_movie(
         for k, v in metadata.items():
             if v is not None:
                 command.extend(['-metadata', f'{k}={v}'])
+    missing_files = generate_missing_frames()
     command.extend([output_path, '-y'])
     subprocess.run(command)
+    if missing_files is not None:
+        for f in missing_files:
+            os.remove(f)
 
 
 def convert_to_gif(
@@ -163,7 +218,7 @@ def convert_to_gif(
         fps: int = 15,
         optimize: bool = True,
         depth: int = 8,
-        bounce: bool = False):
+        bounce: bool = False) -> None:
     """Convert images to gif
 
     input_path can be folder or list of image paths."""

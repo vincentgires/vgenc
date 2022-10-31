@@ -26,6 +26,11 @@ parser.add_argument(
 parser.add_argument(
     '--start-number', required=False, type=int, metavar='number')
 parser.add_argument(
+    '--missing-frames', required=False, metavar='value',
+    help='previous, black, checkerboard')
+parser.add_argument(
+    '--frame-range', required=False, type=int, nargs=2, metavar=('in', 'out'))
+parser.add_argument(
     '-vc', '--video-codec', required=False, metavar='name')
 parser.add_argument(
     '-vq', '--video-quality', required=False, type=int, metavar='number')
