@@ -1,7 +1,6 @@
 import os
 import re
 import subprocess
-from typing import Optional
 from .probe import get_image_size
 
 ffmpeg_video_codecs = {
@@ -21,13 +20,13 @@ ffmpeg_audio_codecs = {
 
 
 def convert_image(
-        input_path: str,
-        output_path: str,
-        colorspace: Optional[tuple[str, str]] = None,
-        look: Optional[str] = None,
-        image_size: Optional[tuple[int, int]] = None,
-        compression: Optional[str] = None,
-        **_) -> None:
+        input_path,
+        output_path,
+        colorspace=None,
+        look=None,
+        image_size=None,
+        compression=None,
+        **_):
     """Convert image using oiiotool"""
     command = ['oiiotool', '-v', input_path]
     if colorspace is not None:
@@ -45,26 +44,26 @@ def convert_image(
 
 
 def convert_movie(
-        input_path: str | list[str],
-        output_path: str,
-        framerate: Optional[int] = None,
-        start_number: Optional[int] = None,
-        missing_frames: Optional[str] = None,
-        frame_range: Optional[tuple[int, int]] = None,
-        video_codec: Optional[str] = None,
-        video_quality: Optional[int] = None,
-        video_bitrate: Optional[str] = None,
-        constrained_quality: Optional[int] = None,
-        audio_codec: Optional[str] = None,
-        audio_quality: Optional[int] = None,
-        audio_bitrate: Optional[str] = None,
-        resize: Optional[tuple[int, int]] = None,
-        is_stereo: bool = False,
-        two_pass: bool = False,
-        video_filter: Optional[dict | list[dict]] = None,
-        draw_text: Optional[dict | list[dict]] = None,
-        metadata: Optional[dict] = None,
-        **_) -> None:
+        input_path,
+        output_path,
+        framerate=None,
+        start_number=None,
+        missing_frames=None,
+        frame_range=None,
+        video_codec=None,
+        video_quality=None,
+        video_bitrate=None,
+        constrained_quality=None,
+        audio_codec=None,
+        audio_quality=None,
+        audio_bitrate=None,
+        resize=None,
+        is_stereo=False,
+        two_pass=False,
+        video_filter=None,
+        draw_text=None,
+        metadata=None,
+        **_):
     """Convert to movie using ffmpeg
 
     input_path: set frame number with printf syntax padding (%04d, %06d, etc).
@@ -77,7 +76,7 @@ def convert_movie(
     if frame_range is not None:
         start_number = frame_range[0]
 
-    def generate_missing_frames() -> list:
+    def generate_missing_frames():
         if missing_frames is None:
             return
 
@@ -94,39 +93,38 @@ def convert_movie(
                 input_path[0], frame, padding)
             if os.path.exists(target_filepath):
                 continue
-            match missing_frames:
-                case 'previous':
-                    for f in reversed(range(start_number, frame)):
-                        looked_file = replace_frame_padding(
-                            input_path[0], f, padding)
-                        if os.path.exists(looked_file):
-                            os.symlink(looked_file, target_filepath)
-                            break
-                case 'black' | 'checkerboard' as c:
-                    # Assume first frame exists and has correct resolution
-                    get_first_file = replace_frame_padding(
-                        input_path[0], start_number, padding)
-                    x, y = get_image_size(get_first_file)
-                    bg_args = {
-                        'black': 'canvas:black',
-                        'checkerboard': 'pattern:checkerboard'}
-                    subprocess.run([
-                        'magick',
-                        '-size',
-                        f'{x}x{y}',
-                        bg_args[c],
-                        target_filepath])
+            if missing_frames == 'previous':
+                for f in reversed(range(start_number, frame)):
+                    looked_file = replace_frame_padding(
+                        input_path[0], f, padding)
+                    if os.path.exists(looked_file):
+                        os.symlink(looked_file, target_filepath)
+                        break
+            elif missing_frames in ('black', 'checkerboard'):
+                # Assume first frame exists and has correct resolution
+                get_first_file = replace_frame_padding(
+                    input_path[0], start_number, padding)
+                x, y = get_image_size(get_first_file)
+                bg_args = {
+                    'black': 'canvas:black',
+                    'checkerboard': 'pattern:checkerboard'}
+                subprocess.run([
+                    'magick',
+                    '-size',
+                    f'{x}x{y}',
+                    bg_args[missing_frames],
+                    target_filepath])
             missing_files.append(target_filepath)
         return missing_files
 
     def build_drawtext(
-            fontfile: str,
-            fontsize: str,
-            fontcolor: str,
-            text: str,
-            x: int | str,
-            y: int | str,
-            start_number: Optional[int] = None) -> str:
+            fontfile,
+            fontsize,
+            fontcolor,
+            text,
+            x,
+            y,
+            start_number=None):
         content = [
             f'fontfile={fontfile}',
             f'text={text}',
@@ -138,7 +136,7 @@ def convert_movie(
             content.extend([f'start_number={start_number}'])
         return f'drawtext={":".join(content)}'
 
-    def build_filter(command: list) -> None:
+    def build_filter(command):
         args = []
         if is_stereo:
             args.append('hstack,stereo3d=sbsl:arcg')
@@ -213,12 +211,12 @@ def convert_movie(
 
 
 def convert_to_gif(
-        input_path: str | list[str],
-        output_path: str,
-        fps: int = 15,
-        optimize: bool = True,
-        depth: int = 8,
-        bounce: bool = False) -> None:
+        input_path,
+        output_path,
+        fps=15,
+        optimize=True,
+        depth=8,
+        bounce=False):
     """Convert images to gif
 
     input_path can be folder or list of image paths."""

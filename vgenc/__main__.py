@@ -58,12 +58,11 @@ args = parser.parse_args()
 if len(args.input_path) == 1:
     args.input_path = args.input_path[0]
 
-match args.command:
-    case 'image':
-        convert_image(**vars(args))
-    case 'movie':
-        convert_movie(**vars(args))
-    case 'extract':
-        extract_frames_from_movie(**vars(args))
-    case _:
-        print('No command are specified')
+if args.command == 'image':
+    convert_image(**vars(args))
+elif args.command == 'movie':
+    convert_movie(**vars(args))
+elif args.command == 'extract':
+    extract_frames_from_movie(**vars(args))
+else:
+    print('No command are specified')
