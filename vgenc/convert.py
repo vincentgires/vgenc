@@ -88,7 +88,9 @@ def convert_movie(
             return
         padding = int(matched.group(1))
         missing_files = []
-        for frame in range(frame_range[0], frame_range[1] + 1):
+        for frame in reversed(range(frame_range[0], frame_range[1] + 1)):
+            # Start from last frame to make sure previous mode find real
+            # file and not symlink
             target_filepath = replace_frame_padding(
                 input_path[0], frame, padding)
             if os.path.exists(target_filepath):
