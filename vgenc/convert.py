@@ -20,6 +20,53 @@ ffmpeg_audio_codecs = {
     'mp3': 'libmp3lame'}
 
 
+def generate_missing_frames(
+        input_path: str,
+        frame_range: tuple[int, int],
+        start_number: int,
+        missing_frames: str  # previous | black | checkerboard
+        ) -> list:
+
+    def replace_frame_padding(name: str, frame: int, padding: int) -> str:
+        return name.replace(f'%0{padding}d', str(frame).zfill(padding))
+
+    matched = re.match(r'.*?%(.*)d', input_path)
+    if matched is None:
+        return
+    padding = int(matched.group(1))
+    missing_files = []
+    for frame in reversed(range(frame_range[0], frame_range[1] + 1)):
+        # Start from last frame to make sure previous mode find real
+        # file and not symlink
+        target_filepath = replace_frame_padding(
+            input_path, frame, padding)
+        if os.path.exists(target_filepath):
+            continue
+        match missing_frames:
+            case 'previous':
+                for f in reversed(range(start_number, frame)):
+                    looked_file = replace_frame_padding(input_path, f, padding)
+                    if os.path.exists(looked_file):
+                        os.symlink(looked_file, target_filepath)
+                        break
+            case 'black' | 'checkerboard' as c:
+                # Assume first frame exists and has correct resolution
+                get_first_file = replace_frame_padding(
+                    input_path, start_number, padding)
+                x, y = get_image_size(get_first_file)
+                bg_args = {
+                    'black': 'canvas:black',
+                    'checkerboard': 'pattern:checkerboard'}
+                subprocess.run([
+                    'magick',
+                    '-size',
+                    f'{x}x{y}',
+                    bg_args[c],
+                    target_filepath])
+        missing_files.append(target_filepath)
+    return missing_files
+
+
 def convert_image(
         input_path: str,
         output_path: str,
@@ -76,50 +123,6 @@ def convert_movie(
         input_path = [input_path]
     if frame_range is not None:
         start_number = frame_range[0]
-
-    def generate_missing_frames() -> list:
-        if missing_frames is None:
-            return
-
-        def replace_frame_padding(name: str, frame: int, padding: int) -> str:
-            return name.replace(f'%0{padding}d', str(frame).zfill(padding))
-
-        matched = re.match(r'.*?%(.*)d', input_path[0])
-        if matched is None:
-            return
-        padding = int(matched.group(1))
-        missing_files = []
-        for frame in reversed(range(frame_range[0], frame_range[1] + 1)):
-            # Start from last frame to make sure previous mode find real
-            # file and not symlink
-            target_filepath = replace_frame_padding(
-                input_path[0], frame, padding)
-            if os.path.exists(target_filepath):
-                continue
-            match missing_frames:
-                case 'previous':
-                    for f in reversed(range(start_number, frame)):
-                        looked_file = replace_frame_padding(
-                            input_path[0], f, padding)
-                        if os.path.exists(looked_file):
-                            os.symlink(looked_file, target_filepath)
-                            break
-                case 'black' | 'checkerboard' as c:
-                    # Assume first frame exists and has correct resolution
-                    get_first_file = replace_frame_padding(
-                        input_path[0], start_number, padding)
-                    x, y = get_image_size(get_first_file)
-                    bg_args = {
-                        'black': 'canvas:black',
-                        'checkerboard': 'pattern:checkerboard'}
-                    subprocess.run([
-                        'magick',
-                        '-size',
-                        f'{x}x{y}',
-                        bg_args[c],
-                        target_filepath])
-            missing_files.append(target_filepath)
-        return missing_files
 
     def build_drawtext(
             fontfile: str,
@@ -206,12 +209,17 @@ def convert_movie(
         for k, v in metadata.items():
             if v is not None:
                 command.extend(['-metadata', f'{k}={v}'])
-    missing_files = generate_missing_frames()
+    missing_files = []
+    if missing_frames is not None:
+        for i in input_path:
+            path = generate_missing_frames(
+                i, frame_range, start_number, missing_frames)
+            if path:
+                missing_files.extend(path)
     command.extend([output_path, '-y'])
     subprocess.run(command)
-    if missing_files is not None:
-        for f in missing_files:
-            os.remove(f)
+    for f in missing_files:
+        os.remove(f)
 
 
 def convert_to_gif(
