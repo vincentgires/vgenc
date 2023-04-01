@@ -45,6 +45,7 @@ def generate_missing_frames(
             for f in reversed(range(start_number, frame)):
                 looked_file = replace_frame_padding(input_path, f, padding)
                 if os.path.exists(looked_file):
+                    looked_file = os.path.basename(looked_file)
                     os.symlink(looked_file, target_filepath)
                     break
         elif missing_frames in ('black', 'checkerboard'):
