@@ -73,9 +73,14 @@ def convert_image(
         look=None,
         image_size=None,
         compression=None,
+        rgb_only=False,
+        data_format=None,
         **_):
     """Convert image using oiiotool"""
-    command = ['oiiotool', '-v', input_path]
+    command = ['oiiotool', '-v']
+    if rgb_only:
+        command.append(['-i:ch=R,G,B'])
+    command.append(input_path)
     if colorspace is not None:
         command.append('--colorconvert')
         command.extend(colorspace)
@@ -86,6 +91,12 @@ def convert_image(
         command.extend(['--resize', f'{x}x{y}'])
     if compression is not None:
         command.extend(['--compression', compression])
+    if data_format is not None:
+        # Can set a single data format or a list to specify channel formats
+        # -d half -d Z=float
+        df = [data_format] if isinstance(data_format, str) else data_format
+        for d in df:
+            command.extend(['-d', d])
     command.extend(['-o', output_path])
     subprocess.run(command)
 
