@@ -70,6 +70,7 @@ def convert_image(
         input_path,
         output_path,
         colorspace=None,
+        display_view=None,
         look=None,
         image_size=None,
         compression=None,
@@ -84,6 +85,9 @@ def convert_image(
     if colorspace is not None:
         command.append('--colorconvert')
         command.extend(colorspace)
+    if display_view:
+        command.append('--ociodisplay')
+        command.extend(display_view)
     if look is not None:
         command.extend(['--ociolook', look])
     if image_size is not None:
