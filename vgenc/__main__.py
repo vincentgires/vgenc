@@ -15,6 +15,8 @@ parser.add_argument(
 parser.add_argument(
     '--colorspace', required=False, nargs=2, metavar=('input', 'output'))
 parser.add_argument(
+    '--display-view', required=False, nargs=2, metavar=('display', 'view'))
+parser.add_argument(
     '--look', required=False, metavar='name')
 parser.add_argument(
     '--image-size', required=False, type=int, nargs=2, metavar=('x', 'y'))
