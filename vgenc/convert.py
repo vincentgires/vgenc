@@ -72,6 +72,7 @@ def convert_image(
         input_path: str,
         output_path: str,
         colorspace: Optional[tuple[str, str]] = None,
+        display_view: Optional[tuple[str, str]] = None,
         look: Optional[str] = None,
         image_size: Optional[tuple[int, int]] = None,
         compression: Optional[str] = None,
@@ -86,6 +87,9 @@ def convert_image(
     if colorspace is not None:
         command.append('--colorconvert')
         command.extend(colorspace)
+    if display_view:
+        command.append('--ociodisplay')
+        command.extend(display_view)
     if look is not None:
         command.extend(['--ociolook', look])
     if image_size is not None:
