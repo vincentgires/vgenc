@@ -83,16 +83,16 @@ def convert_image(
     if rgb_only:
         command.append(['-i:ch=R,G,B'])
     command.append(input_path)
+    if input_colorspace is not None:
+        command.extend(['--iscolorspace', input_colorspace])
     if color_convert is not None:
         command.append('--colorconvert')
         command.extend(color_convert)
-    if input_colorspace is not None:
-        command.extend(['--iscolorspace', input_colorspace])
+    if look is not None:
+        command.extend(['--ociolook', look])
     if display_view is not None:
         command.append('--ociodisplay')
         command.extend(display_view)
-    if look is not None:
-        command.extend(['--ociolook', look])
     if image_size is not None:
         x, y = image_size
         command.extend(['--resize', f'{x}x{y}'])

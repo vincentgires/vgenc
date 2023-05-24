@@ -13,13 +13,13 @@ parser.add_argument(
     '-o', '--output-path', required=True, metavar='path')
 # Convert image arguments
 parser.add_argument(
-    '--color-convert', required=False, nargs=2, metavar=('input', 'output'))
-parser.add_argument(
     '--input-colorspace', required=False, metavar='name')
 parser.add_argument(
-    '--display-view', required=False, nargs=2, metavar=('display', 'view'))
+    '--color-convert', required=False, nargs=2, metavar=('input', 'output'))
 parser.add_argument(
     '--look', required=False, metavar='name')
+parser.add_argument(
+    '--display-view', required=False, nargs=2, metavar=('display', 'view'))
 parser.add_argument(
     '--image-size', required=False, type=int, nargs=2, metavar=('x', 'y'))
 parser.add_argument(
