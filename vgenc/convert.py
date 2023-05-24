@@ -71,30 +71,34 @@ def generate_missing_frames(
 def convert_image(
         input_path: str,
         output_path: str,
-        color_convert: Optional[tuple[str, str]] = None,
         input_colorspace: Optional[str] = None,
-        display_view: Optional[tuple[str, str]] = None,
+        color_convert: Optional[tuple[str, str]] = None,
         look: Optional[str] = None,
+        display_view: Optional[tuple[str, str]] = None,
         image_size: Optional[tuple[int, int]] = None,
         compression: Optional[str] = None,
         rgb_only: bool = False,
         data_format: Optional[str | list] = None,
         **_) -> None:
-    """Convert image using oiiotool"""
+    """Convert image using oiiotool
+
+    input_colorspace: needed for display_view.
+    """
+
     command = ['oiiotool', '-v']
     if rgb_only:
         command.append(['-i:ch=R,G,B'])
     command.append(input_path)
+    if input_colorspace is not None:
+        command.extend(['--iscolorspace', input_colorspace])
     if color_convert is not None:
         command.append('--colorconvert')
         command.extend(color_convert)
-    if input_colorspace is not None:
-        command.extend(['--iscolorspace', input_colorspace])
+    if look is not None:
+        command.extend(['--ociolook', look])
     if display_view is not None:
         command.append('--ociodisplay')
         command.extend(display_view)
-    if look is not None:
-        command.extend(['--ociolook', look])
     if image_size is not None:
         x, y = image_size
         command.extend(['--resize', f'{x}x{y}'])
