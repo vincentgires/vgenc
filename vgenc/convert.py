@@ -69,7 +69,8 @@ def generate_missing_frames(
 def convert_image(
         input_path,
         output_path,
-        colorspace=None,
+        color_convert=None,
+        input_colorspace=None,
         display_view=None,
         look=None,
         image_size=None,
@@ -82,10 +83,12 @@ def convert_image(
     if rgb_only:
         command.append(['-i:ch=R,G,B'])
     command.append(input_path)
-    if colorspace is not None:
+    if color_convert is not None:
         command.append('--colorconvert')
-        command.extend(colorspace)
-    if display_view:
+        command.extend(color_convert)
+    if input_colorspace is not None:
+        command.extend(['--iscolorspace', input_colorspace])
+    if display_view is not None:
         command.append('--ociodisplay')
         command.extend(display_view)
     if look is not None:
