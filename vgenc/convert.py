@@ -1,5 +1,7 @@
 import os
 import re
+import tempfile
+import shutil
 import subprocess
 from .probe import get_image_size
 
@@ -17,6 +19,9 @@ ffmpeg_audio_codecs = {
     'opus': 'libopus',
     'vorbis': 'libvorbis',
     'mp3': 'libmp3lame'}
+
+temporary_ext = '.jpg'
+temporary_compression = 'jpeg:95'
 
 
 def generate_missing_frames(
@@ -108,6 +113,11 @@ def convert_image(
     subprocess.run(command)
 
 
+def _replace_ext(file_path: str, ext: str) -> str:
+    path, old_ext = os.path.splitext(file_path)
+    return path + ext
+
+
 def convert_movie(
         input_path,
         output_path,
@@ -128,6 +138,12 @@ def convert_movie(
         video_filter=None,
         draw_text=None,
         metadata=None,
+        # Args for image inputs conversion
+        convert_input_images=False,
+        input_colorspace=None,
+        color_convert=None,
+        look=None,
+        display_view=None,
         **_):
     """Convert to movie using ffmpeg
 
@@ -188,6 +204,25 @@ def convert_movie(
         if args:
             command.extend(['-filter_complex', ','.join(args)])
 
+    # Convert all images to a temporary directory
+    tmp_dir = None
+    if convert_input_images and '%' in input_path[0]:
+        tmp_dir = tempfile.mkdtemp()
+        source_dir, source_name = os.path.split(input_path)
+        for name in sorted(os.listdir(source_dir)):
+            source_path = os.path.join(source_dir, name)
+            target_path = os.path.join(
+                tmp_dir, _replace_ext(name, temporary_ext))
+            convert_image(
+                source_path, target_path,
+                input_colorspace=input_colorspace,
+                color_convert=color_convert,
+                look=look,
+                display_view=display_view,
+                compression=temporary_compression)
+        input_path[0] = os.path.join(
+            tmp_dir,  _replace_ext(source_name, temporary_ext))
+
     command = ['ffmpeg']
     for i in input_path:
         if frame_rate is not None:
@@ -237,6 +272,8 @@ def convert_movie(
     subprocess.run(command)
     for f in missing_files:
         os.remove(f)
+    if tmp_dir is not None:
+        shutil.rmtree(tmp_dir)
 
 
 def convert_to_gif(
