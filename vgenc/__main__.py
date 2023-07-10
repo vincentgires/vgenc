@@ -26,7 +26,7 @@ parser.add_argument(
     '--compression', required=False, metavar='format')
 # Convert video
 parser.add_argument(
-    '--framerate', required=False, type=int, metavar='number')
+    '--frame-rate', required=False, type=int, metavar='number')
 parser.add_argument(
     '--start-number', required=False, type=int, metavar='number')
 parser.add_argument(

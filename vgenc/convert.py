@@ -117,7 +117,7 @@ def convert_image(
 def convert_movie(
         input_path: str | list[str],
         output_path: str,
-        framerate: Optional[int] = None,
+        frame_rate: Optional[int] = None,
         start_number: Optional[int] = None,
         missing_frames: Optional[str] = None,
         frame_range: Optional[tuple[int, int]] = None,
@@ -196,8 +196,8 @@ def convert_movie(
 
     command = ['ffmpeg']
     for i in input_path:
-        if framerate is not None:
-            command.extend(['-framerate', str(framerate)])
+        if frame_rate is not None:
+            command.extend(['-framerate', str(frame_rate)])
         if start_number is not None:
             command.extend(['-start_number', str(start_number)])
         command.extend(['-i', i])
