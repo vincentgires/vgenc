@@ -274,6 +274,7 @@ def convert_movie(
                 i, frame_range, start_number, missing_frames)
             if path:
                 missing_files.extend(path)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     command.extend([output_path, '-y'])
     subprocess.run(command)
     for f in missing_files:
