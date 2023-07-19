@@ -3,7 +3,7 @@ import re
 import tempfile
 import shutil
 import subprocess
-from typing import Optional
+from typing import Optional, Literal
 from .probe import get_image_size
 
 ffmpeg_video_codecs = {
@@ -24,12 +24,14 @@ ffmpeg_audio_codecs = {
 temporary_ext = '.jpg'
 temporary_compression = 'jpeg:95'
 
+MissingFramesLiteral = Literal['previous', 'black', 'checkerboard']
+
 
 def generate_missing_frames(
         input_path: str,
         frame_range: tuple[int, int],
         start_number: int,
-        missing_frames: str  # previous | black | checkerboard
+        missing_frames: MissingFramesLiteral
         ) -> list:
 
     def replace_frame_padding(name: str, frame: int, padding: int) -> str:
@@ -129,7 +131,7 @@ def convert_movie(
         output_path: str,
         frame_rate: Optional[int] = None,
         start_number: Optional[int] = None,
-        missing_frames: Optional[str] = None,
+        missing_frames: Optional[MissingFramesLiteral] = None,
         frame_range: Optional[tuple[int, int]] = None,
         video_codec: Optional[str] = None,
         video_quality: Optional[int] = None,
@@ -154,7 +156,6 @@ def convert_movie(
     """Convert to movie using ffmpeg
 
     input_path: set frame number with printf syntax padding (%04d, %06d, etc).
-    missing_frames: previous, black, checkerboard.
     frame_range: needed for missing frames, first item overrides start_number.
     """
 
