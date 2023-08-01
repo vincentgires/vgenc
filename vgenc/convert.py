@@ -204,6 +204,12 @@ def convert_movie(
         if args:
             command.extend(['-filter_complex', ','.join(args)])
 
+    def add_frame_rate_and_number(command):
+        if frame_rate is not None:
+            command.extend(['-framerate', str(frame_rate)])
+        if start_number is not None:
+            command.extend(['-start_number', str(start_number)])
+
     # Convert all images to a temporary directory
     tmp_dir = None
     if convert_input_images and '%' in input_path[0]:
@@ -224,12 +230,12 @@ def convert_movie(
             tmp_dir,  _replace_ext(source_name, temporary_ext))
 
     command = ['ffmpeg']
+    if '%' in input_path[0]:
+        add_frame_rate_and_number(command)
     for i in input_path:
         command.extend(['-i', i])
-        if frame_rate is not None:
-            command.extend(['-framerate', str(frame_rate)])
-        if start_number is not None:
-            command.extend(['-start_number', str(start_number)])
+        if '%' not in i:
+            add_frame_rate_and_number(command)
     if video_codec is not None:
         vc = ffmpeg_video_codecs.get(video_codec, video_codec)
         command.extend(['-c:v', vc])
