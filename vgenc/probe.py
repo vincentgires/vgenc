@@ -52,3 +52,21 @@ def get_metadata_from_image(input_path: str) -> dict:
     return {
         i.split(': ')[0][4:]: i.split(': ')[1][1:-1]
         for i in output.decode().split('\n') if len(i.split(': ')) > 1}
+
+
+def get_stream_info(input_path):
+    command = ['ffprobe', input_path, '-show_streams', '-print_format', 'json']
+    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
+        output, errors = p.communicate()
+        output = output.decode()
+        output = json.loads(output)
+    return output
+
+
+def has_audio_stream(input_path):
+    info_data = get_stream_info(input_path)
+    for stream in info_data['streams']:
+        if 'codec_type' in stream:
+            if stream['codec_type'] == 'audio':
+                return True
+    return False
