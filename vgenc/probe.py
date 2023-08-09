@@ -45,7 +45,7 @@ def get_metadata_from_movie(input_path):
     return output['format']['tags']
 
 
-def get_metadata_from_image(input_path: str) -> dict:
+def get_metadata_from_image(input_path):
     command = ['iinfo', '-v', input_path]
     with Popen(command, stdout=PIPE, stderr=PIPE) as p:
         output, errors = p.communicate()
