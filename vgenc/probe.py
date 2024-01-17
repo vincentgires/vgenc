@@ -50,12 +50,28 @@ def get_metadata_from_movie(input_path):
 
 
 def get_metadata_from_image(input_path):
+    def get_key(value):
+        return value.split(': ')[0].strip()
+
+    def get_value(value):
+        value = value.strip()
+        key_value = get_key(value)
+        start_index = len(key_value) + len(': ')
+        value = value[start_index:]
+        if value.lstrip('-').isdecimal():
+            return int(value)
+        elif value.lstrip('-').replace('.', '').isdecimal():
+            return float(value)
+        elif value.startswith('"') and value.endswith('"'):
+            return value[1:-1]
+        return value
+
     command = ['iinfo', '-v', input_path]
     p = Popen(command, stdout=PIPE, stderr=PIPE)
     p.wait()
     output, errors = p.communicate()
     return {
-        i.split(': ')[0][4:]: i.split(': ')[1][1:-1]
+        get_key(i): get_value(i)
         for i in output.decode().split('\n') if len(i.split(': ')) > 1}
 
 
