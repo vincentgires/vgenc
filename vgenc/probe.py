@@ -1,4 +1,4 @@
-from subprocess import Popen, PIPE
+from subprocess import run, PIPE
 import json
 
 
@@ -6,13 +6,11 @@ def get_movie_size(input_path: str, stream_index: int = 0) -> tuple[int, int]:
     command = [
         'ffprobe', input_path,
         '-show_entries', 'stream=width,height', '-print_format', 'json']
-    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
-        output, errors = p.communicate()
-        output = output.decode()
-        output = json.loads(output)
-        size = (
-            output['streams'][stream_index]['width'],
-            output['streams'][stream_index]['height'])
+    output = run(command, check=True, stdout=PIPE).stdout
+    result = json.loads(output.decode())
+    size = (
+        result['streams'][stream_index]['width'],
+        result['streams'][stream_index]['height'])
     return size
 
 
@@ -20,29 +18,24 @@ def get_movie_duration(input_path: str, stream_index: int = 0) -> int:
     command = [
         'ffprobe', input_path, '-count_packets',
         '-show_entries', 'stream=nb_read_packets', '-print_format', 'json']
-    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
-        output, errors = p.communicate()
-        output = output.decode()
-        output = json.loads(output)
-        value = output['streams'][stream_index]['nb_read_packets']
+    output = run(command, check=True, stdout=PIPE).stdout
+    result = json.loads(output.decode())
+    value = result['streams'][stream_index]['nb_read_packets']
     return int(value)
 
 
 def get_image_size(input_path: str) -> tuple[int, int]:
     command = ['iinfo', input_path]
-    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
-        output, errors = p.communicate()
-        x, y = output.decode().split(':')[1].split(',')[0].split('x')
+    output = run(command, check=True, stdout=PIPE).stdout
+    x, y = output.decode().split(':')[1].split(',')[0].split('x')
     return int(x), int(y)
 
 
 def get_metadata_from_movie(input_path: str) -> dict:
     command = ['ffprobe', input_path, '-show_format', '-print_format', 'json']
-    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
-        output, errors = p.communicate()
-        output = output.decode()
-        output = json.loads(output)
-    return output['format']['tags']
+    output = run(command, check=True, stdout=PIPE).stdout
+    result = json.loads(output.decode())
+    return result['format']['tags']
 
 
 def get_metadata_from_image(input_path: str) -> dict:
@@ -63,8 +56,7 @@ def get_metadata_from_image(input_path: str) -> dict:
         return value
 
     command = ['iinfo', '-v', input_path]
-    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
-        output, errors = p.communicate()
+    output = run(command, check=True, stdout=PIPE).stdout
     return {
         get_key(i): get_value(i)
         for i in output.decode().split('\n') if len(i.split(': ')) > 1}
@@ -72,11 +64,8 @@ def get_metadata_from_image(input_path: str) -> dict:
 
 def get_stream_info(input_path: str) -> dict:
     command = ['ffprobe', input_path, '-show_streams', '-print_format', 'json']
-    with Popen(command, stdout=PIPE, stderr=PIPE) as p:
-        output, errors = p.communicate()
-        output = output.decode()
-        output = json.loads(output)
-    return output
+    output = run(command, check=True, stdout=PIPE).stdout
+    return json.loads(output.decode())
 
 
 def has_audio_stream(input_path: str) -> bool:
