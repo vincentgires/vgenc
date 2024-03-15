@@ -36,7 +36,9 @@ def composite_images(
         display_view -- ocio device display and view transform names
     """
 
-    def next_socket(elements: Iterator, name: str):
+    def next_socket(
+            elements: Iterator[bpy.types.NodeSocket],
+            name: str) -> bpy.types.NodeSocket:
         return next((x for x in inputs_iter if x.name == name), None)
 
     # Create scene and settings
