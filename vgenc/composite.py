@@ -23,14 +23,23 @@ def composite_images(
 
     Keyword arguments:
         layers_data -- list of dict with composite data
-            [{'path': '/bg.exr',
-              'input_colorspace': 'sRGB - Display'},
-             {'path': '/fg.exr',
-              'input_colorspace': 'ACEScg',
-              'blend_type': 'alpha_over'},
-             {'path': '/volume.exr',
-              'input_colorspace': 'ACEScg',
-              'blend_type': 'add'}]
+            keys:
+                path -- input path
+                input_colorspace -- input transform
+                blend_type -- blend mode or alpha over
+                split_channels -- split rgb channels into individual components
+                    to apply color correction
+            example:
+                [{'path': '/bg.exr',
+                  'input_colorspace': 'sRGB - Display'},
+                 {'path': '/fg.exr',
+                  'input_colorspace': 'ACEScg',
+                  'blend_type': 'alpha_over'},
+                 {'path': '/volume.exr',
+                  'input_colorspace': 'ACEScg',
+                  'blend_type': 'add',
+                  'split_channels': [
+                      (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]}]
         output_path -- path with # to define padding of frame numbers
         look -- ocio look name
         display_view -- ocio device display and view transform names
@@ -40,6 +49,45 @@ def composite_images(
             elements: Iterator[bpy.types.NodeSocket],
             name: str) -> bpy.types.NodeSocket:
         return next((x for x in inputs_iter if x.name == name), None)
+
+    def split_rgb(
+            scene: bpy.types.Scene,
+            node: bpy.types.Node,
+            multiply: list[tuple[float, float, float]]) -> bpy.types.Node:
+        """
+        Keyword arguments:
+            node -- start node
+            multiply -- color channel multiplier
+                [(1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]
+        """
+        tree = scene.node_tree
+        sep_node = tree.nodes.new('CompositorNodeSeparateColor')
+        mix_rg_node = tree.nodes.new('CompositorNodeMixRGB')
+        mix_rg_node.blend_type = 'ADD'
+        mix_gb_node = tree.nodes.new('CompositorNodeMixRGB')
+        mix_gb_node.blend_type = 'ADD'
+        mult_r_node = tree.nodes.new('CompositorNodeMixRGB')
+        mult_r_node.blend_type = 'MULTIPLY'
+        mult_r_node.inputs[2].default_value = multiply[0] + (1,)
+        mult_g_node = tree.nodes.new('CompositorNodeMixRGB')
+        mult_g_node.blend_type = 'MULTIPLY'
+        mult_g_node.inputs[2].default_value = multiply[1] + (1,)
+        mult_b_node = tree.nodes.new('CompositorNodeMixRGB')
+        mult_b_node.blend_type = 'MULTIPLY'
+        mult_b_node.inputs[2].default_value = multiply[2] + (1,)
+        set_alpha_node = tree.nodes.new('CompositorNodeSetAlpha')
+        set_alpha_node.mode = 'REPLACE_ALPHA'
+        tree.links.new(node.outputs[0], sep_node.inputs['Image'])
+        tree.links.new(sep_node.outputs['Red'], mult_r_node.inputs[1])
+        tree.links.new(mult_r_node.outputs['Image'], mix_rg_node.inputs[1])
+        tree.links.new(sep_node.outputs['Green'], mult_g_node.inputs[1])
+        tree.links.new(mult_g_node.outputs['Image'], mix_rg_node.inputs[2])
+        tree.links.new(mix_rg_node.outputs['Image'], mix_gb_node.inputs[1])
+        tree.links.new(sep_node.outputs['Blue'], mult_b_node.inputs[1])
+        tree.links.new(mult_b_node.outputs['Image'], mix_gb_node.inputs[2])
+        tree.links.new(mix_gb_node.outputs['Image'], set_alpha_node.inputs[0])
+        tree.links.new(sep_node.outputs['Alpha'], set_alpha_node.inputs[1])
+        return set_alpha_node
 
     # Create scene and settings
     data = bpy.data
@@ -63,7 +111,7 @@ def composite_images(
 
     # Create composite tree
     created_images = []  # Keep track of created images to remove them later
-    created_nodes = []  # Used to connect the mix node of the next layer
+    merged_nodes = []  # Used to connect the mix node of the next layer
     for layer_data in layers_data:
         image_node = node_tree.nodes.new('CompositorNodeImage')
         image_node.frame_duration = end_frame
@@ -79,9 +127,16 @@ def composite_images(
         scale_node.frame_method = 'FIT'
         node_tree.links.new(image_node.outputs[0], scale_node.inputs[0])
 
+        node_to_merge = scale_node
+
+        # Split channels
+        if split_channels := layer_data.get('split_channels'):
+            node_to_merge = split_rgb(
+                scene=scene, node=scale_node, multiply=split_channels)
+
         # Link with previous layer
         mix_node = None
-        if created_nodes:
+        if merged_nodes:
             blend_type = layer_data.get('blend_type')
             if blend_type == 'alpha_over':
                 mix_node = node_tree.nodes.new('CompositorNodeAlphaOver')
@@ -92,15 +147,15 @@ def composite_images(
             inputs_iter = iter(mix_node.inputs)
             image_input_1 = next_socket(inputs_iter, 'Image')
             image_input_2 = next_socket(inputs_iter, 'Image')
-            node_tree.links.new(created_nodes[-1].outputs[0], image_input_1)
-            node_tree.links.new(scale_node.outputs[0], image_input_2)
+            node_tree.links.new(merged_nodes[-1].outputs[0], image_input_1)
+            node_tree.links.new(node_to_merge.outputs[0], image_input_2)
 
-        created_nodes.extend((image_node, scale_node))
+        merged_nodes.extend((image_node, node_to_merge))
         if mix_node is not None:
-            created_nodes.append(mix_node)
+            merged_nodes.append(mix_node)
 
     output_node = node_tree.nodes.new('CompositorNodeComposite')
-    node_tree.links.new(created_nodes[-1].outputs[0], output_node.inputs[0])
+    node_tree.links.new(merged_nodes[-1].outputs[0], output_node.inputs[0])
 
     # Image settings
     image_settings = scene.render.image_settings
@@ -138,7 +193,10 @@ def composite_images(
 
 
 if __name__ == '__main__':
-    layers_data = [{}, {'blend_type': 'alpha_over'}, {'blend_type': 'add'}]
+    layers_data = [
+        {}, {'blend_type': 'alpha_over'},
+        {'blend_type': 'add',
+         'split_channels': [(.1, .2, .3), (.4, .5, .6), (.7, .8, .9)]}]
     composite_images(
         layers_data,
         frame_range=(101, 105),
