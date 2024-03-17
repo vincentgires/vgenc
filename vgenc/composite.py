@@ -27,12 +27,14 @@ def composite_images(
             keys:
                 path -- input path
                 input_colorspace -- input transform
+                output_pass -- name of the pass to be used
                 blend_type -- blend mode or alpha over
                 split_channels -- split rgb channels into individual components
                     to apply color correction
             example:
                 [{'path': '/bg.exr',
-                  'input_colorspace': 'sRGB - Display'},
+                  'input_colorspace': 'sRGB - Display',
+                  'output_pass': 'transmission'},
                  {'path': '/fg.exr',
                   'input_colorspace': 'ACEScg',
                   'blend_type': 'alpha_over'},
@@ -132,7 +134,9 @@ def composite_images(
         scale_node = node_tree.nodes.new('CompositorNodeScale')
         scale_node.space = 'RENDER_SIZE'
         scale_node.frame_method = 'FIT'
-        node_tree.links.new(image_node.outputs[0], scale_node.inputs[0])
+        output_pass = layer_data.get('output_pass', 'Image')
+        node_tree.links.new(
+            image_node.outputs[output_pass], scale_node.inputs[0])
 
         node_to_merge = scale_node
 
