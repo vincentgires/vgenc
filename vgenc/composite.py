@@ -46,6 +46,11 @@ def composite_images(
         look -- ocio look name
         display_view -- ocio device display and view transform names
     """
+    codec_attributes = {
+        'JPEG2000': 'jpeg2k_codec',
+        'OPEN_EXR': 'exr_codec',
+        'OPEN_EXR_MULTILAYER': 'exr_codec',
+        'TIFF': 'tiff_codec'}
 
     def next_socket(
             elements: Iterator[bpy.types.NodeSocket],
@@ -181,14 +186,8 @@ def composite_images(
     if quality is not None:
         image_settings.quality = quality
     if codec is not None:
-        match file_format:
-            case 'JPEG2000':
-                codec_attribute = 'jpeg2k_codec'
-            case 'OPEN_EXR' | 'OPEN_EXR_MULTILAYER':
-                codec_attribute = 'exr_codec'
-            case 'TIFF':
-                codec_attribute = 'tiff_codec'
-        setattr(image_settings, codec_attribute, codec.upper())
+        if codec_attribute := codec_attributes.get(image_settings.file_format):
+            setattr(image_settings, codec_attribute, codec.upper())
 
     # Render
     if output_path is not None:
