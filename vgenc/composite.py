@@ -8,6 +8,7 @@ def composite_images(
         resolution: tuple[int, int] = (2048, 1080),
         frame_rate: int = 24,
         frame_range: tuple[int, int] = (1, 1),
+        color_convert: Optional[tuple[str, str]] = None,
         look: Optional[str] = None,
         display_view: Optional[tuple[str, str]] = None,
         file_format: Optional[str] = None,
@@ -41,6 +42,7 @@ def composite_images(
                   'split_channels': [
                       (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]}]
         output_path -- path with # to define padding of frame numbers
+        color_convert -- ocio color conversion applied before look and view
         look -- ocio look name
         display_view -- ocio device display and view transform names
     """
@@ -154,6 +156,15 @@ def composite_images(
         if mix_node is not None:
             merged_nodes.append(mix_node)
 
+    if color_convert is not None:
+        colorspace_node = node_tree.nodes.new(
+            'CompositorNodeConvertColorSpace')
+        colorspace_node.from_color_space = color_convert[0]
+        colorspace_node.to_color_space = color_convert[1]
+        node_tree.links.new(
+            merged_nodes[-1].outputs[0], colorspace_node.inputs[0])
+        merged_nodes.append(colorspace_node)
+
     output_node = node_tree.nodes.new('CompositorNodeComposite')
     node_tree.links.new(merged_nodes[-1].outputs[0], output_node.inputs[0])
 
@@ -200,5 +211,6 @@ if __name__ == '__main__':
     composite_images(
         layers_data,
         frame_range=(101, 105),
+        color_convert=('ACEScg', 'ACES2065-1'),
         _keep_data=True,
         _render=False)
