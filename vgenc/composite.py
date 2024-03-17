@@ -28,13 +28,15 @@ def composite_images(
                 path -- input path
                 input_colorspace -- input transform
                 output_pass -- name of the pass to be used
+                multiply -- color multiplier (float, float, float)
                 blend_type -- blend mode or alpha over
                 split_channels -- split rgb channels into individual components
                     to apply color correction
             example:
                 [{'path': '/bg.exr',
                   'input_colorspace': 'sRGB - Display',
-                  'output_pass': 'transmission'},
+                  'output_pass': 'transmission',
+                  'multiply': (2.0, 3.0, 4.0)},
                  {'path': '/fg.exr',
                   'input_colorspace': 'ACEScg',
                   'blend_type': 'alpha_over'},
@@ -58,6 +60,20 @@ def composite_images(
             elements: Iterator[bpy.types.NodeSocket],
             name: str) -> bpy.types.NodeSocket:
         return next((x for x in inputs_iter if x.name == name), None)
+
+    def add_mix_node(
+            scene: bpy.types.Scene,
+            node: bpy.types.Node,
+            node_output: str | int = 0,
+            blend_type: str = 'MULTIPLY',
+            value: Optional[tuple[float]] = None) -> bpy.types.Node:
+        tree = scene.node_tree
+        mix_node = tree.nodes.new('CompositorNodeMixRGB')
+        mix_node.blend_type = blend_type
+        tree.links.new(node.outputs[node_output], mix_node.inputs['Image'])
+        if value is not None:
+            mix_node.inputs[2].default_value = value
+        return mix_node
 
     def split_rgb(
             scene: bpy.types.Scene,
@@ -140,6 +156,12 @@ def composite_images(
 
         node_to_merge = scale_node
 
+        # Color multiply
+        if layer_multiply := layer_data.get('multiply'):
+            node_to_merge = add_mix_node(
+                scene=scene, node=scale_node, blend_type='MULTIPLY',
+                value=layer_multiply + (1,))
+
         # Split channels
         if split_channels := layer_data.get('split_channels'):
             node_to_merge = split_rgb(
@@ -208,9 +230,12 @@ def composite_images(
 
 if __name__ == '__main__':
     layers_data = [
-        {}, {'blend_type': 'alpha_over'},
+        {},
+        {'multiply': (.1, .2, .3)},
+        {'blend_type': 'alpha_over'},
         {'blend_type': 'add',
-         'split_channels': [(.1, .2, .3), (.4, .5, .6), (.7, .8, .9)]}]
+         'split_channels': [(.1, .2, .3), (.4, .5, .6), (.7, .8, .9)]}
+    ]
     composite_images(
         layers_data,
         frame_range=(101, 105),
