@@ -29,7 +29,7 @@ def composite_images(
                 input_colorspace -- input transform
                 output_pass -- name of the pass to be used
                 multiply -- color multiplier (float, float, float)
-                blend_type -- blend mode or alpha over
+                mix_mode -- blend mode or alpha over
                 split_channels -- split rgb channels into individual components
                     to apply color correction
             example:
@@ -39,10 +39,10 @@ def composite_images(
                   'multiply': (2.0, 3.0, 4.0)},
                  {'path': '/fg.exr',
                   'input_colorspace': 'ACEScg',
-                  'blend_type': 'alpha_over'},
+                  'mix_mode': 'alpha_over'},
                  {'path': '/volume.exr',
                   'input_colorspace': 'ACEScg',
-                  'blend_type': 'add',
+                  'mix_mode': 'add',
                   'split_channels': [
                       (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]}]
         output_path -- path with # to define padding of frame numbers
@@ -170,13 +170,13 @@ def composite_images(
         # Link with previous layer
         mix_node = None
         if merged_nodes:
-            blend_type = layer_data.get('blend_type')
-            if blend_type == 'alpha_over':
+            mix_mode = layer_data.get('mix_mode')
+            if mix_mode == 'alpha_over':
                 mix_node = node_tree.nodes.new('CompositorNodeAlphaOver')
             else:
                 mix_node = node_tree.nodes.new('CompositorNodeMixRGB')
-                if blend_type is not None:
-                    mix_node.blend_type = blend_type.upper()
+                if mix_mode is not None:
+                    mix_node.blend_type = mix_mode.upper()
             inputs_iter = iter(mix_node.inputs)
             image_input_1 = next_socket(inputs_iter, 'Image')
             image_input_2 = next_socket(inputs_iter, 'Image')
@@ -232,8 +232,8 @@ if __name__ == '__main__':
     layers_data = [
         {},
         {'multiply': (.1, .2, .3)},
-        {'blend_type': 'alpha_over'},
-        {'blend_type': 'add',
+        {'mix_mode': 'alpha_over'},
+        {'mix_mode': 'add',
          'split_channels': [(.1, .2, .3), (.4, .5, .6), (.7, .8, .9)]}
     ]
     composite_images(
