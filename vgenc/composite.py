@@ -152,7 +152,7 @@ def composite_images(
         scale_node = node_tree.nodes.new('CompositorNodeScale')
         scale_node.space = 'RENDER_SIZE'
         scale_node.frame_method = 'FIT'
-        output_pass = layer_data.get('output_pass', 'Image')
+        output_pass = layer_data.get('output_pass', 0)
         node_tree.links.new(
             image_node.outputs[output_pass], scale_node.inputs[0])
 
