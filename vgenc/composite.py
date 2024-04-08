@@ -116,7 +116,7 @@ def composite_images(
 
     # Create scene and settings
     data = bpy.data
-    scene = data.scenes.new('Scene')
+    scene = data.scenes.new('Composite')
     if look is not None:
         scene.view_settings.look = look
     if display_view is not None:
