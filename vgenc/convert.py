@@ -5,6 +5,7 @@ import shutil
 import subprocess
 from typing import Optional, Literal
 from .probe import get_image_size
+from .files import get_frame_info
 
 ffmpeg_video_codecs = {
     'copy': 'copy',
@@ -119,6 +120,46 @@ def convert_image(
             command.extend(['-d', d])
     command.extend(['-o', output_path])
     subprocess.run(command)
+
+
+def convert_image_sequence(
+        input_path: str,
+        output_path: str,
+        # Frame range argument
+        frame_range: tuple[int, int],
+        frame_jump: int = 1,
+        # Convert image arguments
+        input_colorspace: Optional[str] = None,
+        color_convert: Optional[tuple[str, str]] = None,
+        look: Optional[str] = None,
+        display_view: Optional[tuple[str, str]] = None,
+        image_size: Optional[tuple[int, int]] = None,
+        compression: Optional[str] = None,
+        rgb_only: bool = False,
+        data_format: Optional[str | list] = None,
+        ) -> None:
+
+    def build_path(path: str) -> str:
+        frame_info = get_frame_info(path)
+        frame_path = (
+            f"{frame_info['start']}"
+            f"{frame:0{frame_info['digits']}d}"
+            f"{frame_info['end']}")
+        return frame_path
+
+    frame_start, frame_end = frame_range
+    for frame in range(frame_start, frame_end + 1, frame_jump):
+        convert_image(
+            input_path=build_path(input_path),
+            output_path=build_path(output_path),
+            input_colorspace=input_colorspace,
+            color_convert=color_convert,
+            look=look,
+            display_view=display_view,
+            image_size=image_size,
+            compression=compression,
+            rgb_only=rgb_only,
+            data_format=data_format)
 
 
 def _replace_ext(file_path: str, ext: str) -> str:
