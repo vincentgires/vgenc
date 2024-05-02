@@ -119,6 +119,7 @@ def convert_image(
                 compression=compression,
                 rgb_only=rgb_only,
                 data_format=data_format)
+        return
 
     command = ['oiiotool', '-v']
     if rgb_only:
