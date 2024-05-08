@@ -1,4 +1,4 @@
-import subprocess
+from subprocess import run
 
 
 def extract_frames_from_movie(
@@ -17,4 +17,4 @@ def extract_frames_from_movie(
         '-frames:v', str(len(frames)),
         '-vsync', 'vfr',
         output_path, '-y']
-    subprocess.run(command)
+    run(command)

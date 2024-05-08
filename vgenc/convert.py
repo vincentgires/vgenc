@@ -1,11 +1,10 @@
 import os
-import re
 import tempfile
 import shutil
-import subprocess
-from typing import Optional, Literal
-from .probe import get_image_size
-from .files import get_frame_info
+from subprocess import run
+from typing import Optional
+from .files import (
+    MissingFramesLiteral, get_frame_info, generate_missing_frames)
 try:
     import bpy  # Can be used as backend but shouldn't be mandatory
 except ImportError:
@@ -28,56 +27,6 @@ ffmpeg_audio_codecs = {
 
 temporary_ext = '.jpg'
 temporary_compression = 'jpeg:95'
-
-MissingFramesLiteral = Literal['previous', 'black', 'checkerboard']
-
-
-def generate_missing_frames(
-        input_path: str,
-        frame_range: tuple[int, int],
-        start_number: int,
-        missing_frames: MissingFramesLiteral
-        ) -> list:
-
-    def replace_frame_padding(name: str, frame: int, padding: int) -> str:
-        return name.replace(f'%0{padding}d', str(frame).zfill(padding))
-
-    matched = re.match(r'.*?%(.*)d', input_path)
-    if matched is None:
-        return
-    padding = int(matched.group(1))
-    missing_files = []
-    for frame in reversed(range(frame_range[0], frame_range[1] + 1)):
-        # Start from last frame to make sure previous mode find real
-        # file and not symlink
-        target_filepath = replace_frame_padding(
-            input_path, frame, padding)
-        if os.path.exists(target_filepath):
-            continue
-        match missing_frames:
-            case 'previous':
-                for f in reversed(range(start_number, frame)):
-                    looked_file = replace_frame_padding(input_path, f, padding)
-                    if os.path.exists(looked_file):
-                        looked_file = os.path.basename(looked_file)
-                        os.symlink(looked_file, target_filepath)
-                        break
-            case 'black' | 'checkerboard' as c:
-                # Assume first frame exists and has correct resolution
-                get_first_file = replace_frame_padding(
-                    input_path, start_number, padding)
-                x, y = get_image_size(get_first_file)
-                bg_args = {
-                    'black': 'canvas:black',
-                    'checkerboard': 'pattern:checkerboard'}
-                subprocess.run([
-                    'magick',
-                    '-size',
-                    f'{x}x{y}',
-                    bg_args[c],
-                    target_filepath])
-        missing_files.append(target_filepath)
-    return missing_files
 
 
 def convert_image(
@@ -203,7 +152,7 @@ def convert_image(
         for d in df:
             command.extend(['-d', d])
     command.extend(['-o', output_path])
-    subprocess.run(command)
+    run(command)
 
 
 def _replace_ext(file_path: str, ext: str) -> str:
@@ -345,7 +294,7 @@ def convert_movie(
         first_pass_command.extend([
             '-pass', '1', '-an', '-f', 'null',
             'NUL' if os.name == 'nt' else '/dev/null'])
-        subprocess.run(first_pass_command)
+        run(first_pass_command)
         command.extend(['-pass', '2'])
     if audio_codec is not None:
         ac = ffmpeg_audio_codecs.get(audio_codec, audio_codec)
@@ -368,7 +317,7 @@ def convert_movie(
                 missing_files.extend(path)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     command.extend([output_path, '-y'])
-    subprocess.run(command)
+    run(command)
     for f in missing_files:
         os.remove(f)
     if tmp_dir is not None:
@@ -407,7 +356,7 @@ def convert_to_gif(
     if not output_path.endswith('.gif'):
         output_path += '.gif'
     command.append(output_path)
-    subprocess.run(command)
+    run(command)
 
 
 if __name__ == '__main__':
