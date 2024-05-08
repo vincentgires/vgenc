@@ -6,6 +6,10 @@ import subprocess
 from typing import Optional, Literal
 from .probe import get_image_size
 from .files import get_frame_info
+try:
+    import bpy  # Can be used as backend but shouldn't be mandatory
+except ImportError:
+    ...
 
 ffmpeg_video_codecs = {
     'copy': 'copy',
@@ -80,19 +84,27 @@ def convert_image(
         input_path: str,
         output_path: str,
         input_colorspace: Optional[str] = None,
-        color_convert: Optional[tuple[str, str]] = None,
         look: Optional[str] = None,
         display_view: Optional[tuple[str, str]] = None,
-        image_size: Optional[tuple[int, int]] = None,
-        compression: Optional[str] = None,
+        resize: Optional[tuple[int, int]] = None,
+        compression: Optional[str | int] = None,
         rgb_only: bool = False,
-        data_format: Optional[str | list] = None,
         # Image sequence arguments
         image_sequence: bool = False,
         frame_range: tuple[int, int] = (1, 1),
         frame_jump: int = 1,
+        # oiiotool options
+        color_convert: Optional[tuple[str, str]] = None,
+        data_format: Optional[str | list] = None,
+        # bpy options
+        use_bpy: bool = False,
+        file_format: Optional[str] = None,
+        color_mode: Optional[str] = None,
+        color_depth: Optional[int] = None,
+        quality: Optional[int] = None,
+        codec: Optional[str] = None,
         **_) -> None:
-    """Convert image using oiiotool
+    """Convert image using oiiotool or bpy
 
     input_colorspace: needed for display_view.
     """
@@ -115,10 +127,54 @@ def convert_image(
                 color_convert=color_convert,
                 look=look,
                 display_view=display_view,
-                image_size=image_size,
+                resize=resize,
                 compression=compression,
                 rgb_only=rgb_only,
                 data_format=data_format)
+        return
+
+    if use_bpy:
+        codec_attributes = {
+            'JPEG2000': 'jpeg2k_codec',
+            'OPEN_EXR': 'exr_codec',
+            'OPEN_EXR_MULTILAYER': 'exr_codec',
+            'TIFF': 'tiff_codec'}
+        data = bpy.data
+        image = data.images.load(input_path)
+        if input_colorspace is not None:
+            image.colorspace_settings.name = input_colorspace
+        if resize is not None:
+            image.scale(*resize)
+        if display_view is None:
+            if file_format is not None:
+                image.file_format = file_format.upper()
+            image.save_render(filepath=output_path)
+        else:
+            scene = bpy.context.scene
+            if look is not None:
+                scene.view_settings.look = look
+            display, view = display_view
+            scene.display_settings.display_device = display
+            scene.view_settings.view_transform = view
+            image_settings = scene.render.image_settings
+            if file_format is not None:
+                image_settings.file_format = file_format.upper()
+            if color_mode is not None:
+                image_settings.color_mode = color_mode.upper()
+            elif rgb_only:
+                image_settings.color_mode = 'RGB'
+            if color_depth is not None:
+                image_settings.color_depth = str(color_depth)
+            if compression is not None:
+                image_settings.compression = compression
+            if quality is not None:
+                image_settings.quality = quality
+            if codec is not None:
+                if codec_attribute := codec_attributes.get(
+                        image_settings.file_format):
+                    setattr(image_settings, codec_attribute, codec.upper())
+            image.save(filepath=output_path)
+        data.images.remove(image)
         return
 
     command = ['oiiotool', '-v']
@@ -135,8 +191,8 @@ def convert_image(
     if display_view is not None:
         command.append('--ociodisplay')
         command.extend(display_view)
-    if image_size is not None:
-        x, y = image_size
+    if resize is not None:
+        x, y = resize
         command.extend(['--resize', f'{x}x{y}'])
     if compression is not None:
         command.extend(['--compression', compression])
