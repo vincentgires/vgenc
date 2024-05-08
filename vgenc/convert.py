@@ -97,7 +97,7 @@ def convert_image(
         if display_view is None:
             if file_format is not None:
                 image.file_format = file_format.upper()
-            image.save_render(filepath=output_path)
+            image.save(filepath=output_path)
         else:
             scene = bpy.context.scene
             if look is not None:
@@ -122,7 +122,7 @@ def convert_image(
                 if codec_attribute := codec_attributes.get(
                         image_settings.file_format):
                     setattr(image_settings, codec_attribute, codec.upper())
-            image.save(filepath=output_path)
+            image.save_render(filepath=output_path)
         data.images.remove(image)
         return
 
