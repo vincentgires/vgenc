@@ -1,22 +1,22 @@
-from typing import Optional, Iterator
+from typing import Iterator
 import bpy
 
 
 def composite_images(
         layers_data: list[dict],
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
         resolution: tuple[int, int] = (2048, 1080),
         frame_rate: int = 24,
         frame_range: tuple[int, int] = (1, 1),
-        color_convert: Optional[tuple[str, str]] = None,
-        look: Optional[str] = None,
-        display_view: Optional[tuple[str, str]] = None,
-        file_format: Optional[str] = None,
-        color_mode: Optional[str] = None,
-        color_depth: Optional[int] = None,
-        compression: Optional[int] = None,
-        quality: Optional[int] = None,
-        codec: Optional[str] = None,
+        color_convert: tuple[str, str] | None = None,
+        look: str | None = None,
+        display_view: tuple[str, str] | None = None,
+        file_format: str | None = None,
+        color_mode: str | None = None,
+        color_depth: int | None = None,
+        compression: int | None = None,
+        quality: int | None = None,
+        codec: str | None = None,
         _keep_data: bool = False,
         _render: bool = True
         ) -> None:
@@ -66,7 +66,7 @@ def composite_images(
             node: bpy.types.Node,
             node_output: str | int = 0,
             blend_type: str = 'MULTIPLY',
-            value: Optional[tuple[float]] = None) -> bpy.types.Node:
+            value: tuple[float] | None = None) -> bpy.types.Node:
         tree = scene.node_tree
         mix_node = tree.nodes.new('CompositorNodeMixRGB')
         mix_node.blend_type = blend_type

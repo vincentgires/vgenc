@@ -2,7 +2,6 @@ import os
 import tempfile
 import shutil
 from subprocess import run
-from typing import Optional
 from .files import (
     MissingFramesLiteral, get_frame_info, generate_missing_frames)
 try:
@@ -32,26 +31,26 @@ temporary_compression = 'jpeg:95'
 def convert_image(
         input_path: str,
         output_path: str,
-        input_colorspace: Optional[str] = None,
-        look: Optional[str] = None,
-        display_view: Optional[tuple[str, str]] = None,
-        resize: Optional[tuple[int, int]] = None,
-        compression: Optional[str | int] = None,
+        input_colorspace: str | None = None,
+        look: str | None = None,
+        display_view: tuple[str, str] | None = None,
+        resize: tuple[int, int] | None = None,
+        compression: str | int | None = None,
         rgb_only: bool = False,
         # Image sequence arguments
         image_sequence: bool = False,
         frame_range: tuple[int, int] = (1, 1),
         frame_jump: int = 1,
         # oiiotool options
-        color_convert: Optional[tuple[str, str]] = None,
-        data_format: Optional[str | list] = None,
+        color_convert: tuple[str, str] | None = None,
+        data_format: str | list | None = None,
         # bpy options
         use_bpy: bool = False,
-        file_format: Optional[str] = None,
-        color_mode: Optional[str] = None,
-        color_depth: Optional[int] = None,
-        quality: Optional[int] = None,
-        codec: Optional[str] = None,
+        file_format: str | None = None,
+        color_mode: str | None = None,
+        color_depth: int | None = None,
+        quality: int | None = None,
+        codec: str | None = None,
         **_) -> None:
     """Convert image using oiiotool or bpy
 
@@ -163,29 +162,29 @@ def _replace_ext(file_path: str, ext: str) -> str:
 def convert_movie(
         input_path: str | list[str],
         output_path: str,
-        frame_rate: Optional[int] = None,
-        start_number: Optional[int] = None,
-        missing_frames: Optional[MissingFramesLiteral] = None,
-        frame_range: Optional[tuple[int, int]] = None,
-        video_codec: Optional[str] = None,
-        video_quality: Optional[int] = None,
-        video_bitrate: Optional[str] = None,
-        constrained_quality: Optional[int] = None,
-        audio_codec: Optional[str] = None,
-        audio_quality: Optional[int] = None,
-        audio_bitrate: Optional[str] = None,
-        resize: Optional[tuple[int, int]] = None,
+        frame_rate: int | None = None,
+        start_number: int | None = None,
+        missing_frames: MissingFramesLiteral | None = None,
+        frame_range: tuple[int, int] | None = None,
+        video_codec: str | None = None,
+        video_quality: int | None = None,
+        video_bitrate: str | None = None,
+        constrained_quality: int | None = None,
+        audio_codec: str | None = None,
+        audio_quality: int | None = None,
+        audio_bitrate: str | None = None,
+        resize: tuple[int, int] | None = None,
         is_stereo: bool = False,
         two_pass: bool = False,
-        video_filter: Optional[dict | list[dict]] = None,
-        draw_text: Optional[dict | list[dict]] = None,
-        metadata: Optional[dict] = None,
+        video_filter: dict | list[dict] | None = None,
+        draw_text: dict | list[dict] | None = None,
+        metadata: dict | None = None,
         # Args for image inputs conversion
         convert_input_images: bool = False,
-        input_colorspace: Optional[str] = None,
-        color_convert: Optional[tuple[str, str]] = None,
-        look: Optional[str] = None,
-        display_view: Optional[tuple[str, str]] = None,
+        input_colorspace: str | None = None,
+        color_convert: tuple[str, str] | None = None,
+        look: str | None = None,
+        display_view: tuple[str, str] | None = None,
         **_) -> None:
     """Convert to movie using ffmpeg
 
@@ -205,7 +204,7 @@ def convert_movie(
             text: str,
             x: int | str,
             y: int | str,
-            start_number: Optional[int] = None) -> str:
+            start_number: int | None = None) -> str:
         content = [
             f'fontfile={fontfile}',
             f'text={text}',
