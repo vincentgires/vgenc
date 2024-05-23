@@ -22,33 +22,33 @@ def composite_images(
         ) -> None:
     """Composite images from a list of files
 
-    Keyword arguments:
-        layers_data -- list of dict with composite data
-            keys:
-                path -- input path
-                input_colorspace -- input transform
-                output_pass -- name of the pass to be used
-                multiply -- color multiplier (float, float, float)
-                mix_mode -- blend mode or alpha over
-                split_channels -- split rgb channels into individual components
-                    to apply color correction
-            example:
-                [{'path': '/bg.exr',
-                  'input_colorspace': 'sRGB - Display',
-                  'output_pass': 'transmission',
-                  'multiply': (2.0, 3.0, 4.0)},
-                 {'path': '/fg.exr',
-                  'input_colorspace': 'ACEScg',
-                  'mix_mode': 'alpha_over'},
-                 {'path': '/volume.exr',
-                  'input_colorspace': 'ACEScg',
-                  'mix_mode': 'add',
-                  'split_channels': [
-                      (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]}]
-        output_path -- path with # to define padding of frame numbers
-        color_convert -- ocio color conversion applied before look and view
-        look -- ocio look name
-        display_view -- ocio device display and view transform names
+    Args:
+        layers_data: list of dict with composite data
+          Keys:
+            path: input path
+            input_colorspace: input transform
+            output_pass: name of the pass to be used
+            multiply: color multiplier (float, float, float)
+            mix_mode: blend mode or alpha over
+            split_channels: split rgb channels into individual components
+                to apply color correction
+          Example:
+            [{'path': '/bg.exr',
+              'input_colorspace': 'sRGB - Display',
+              'output_pass': 'transmission',
+              'multiply': (2.0, 3.0, 4.0)},
+             {'path': '/fg.exr',
+              'input_colorspace': 'ACEScg',
+              'mix_mode': 'alpha_over'},
+             {'path': '/volume.exr',
+              'input_colorspace': 'ACEScg',
+              'mix_mode': 'add',
+              'split_channels': [
+                  (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]}]
+        output_path: path with # to define padding of frame numbers
+        color_convert: ocio color conversion applied before look and view
+        look: ocio look name
+        display_view: ocio device display and view transform names
     """
     codec_attributes = {
         'JPEG2000': 'jpeg2k_codec',
@@ -80,10 +80,10 @@ def composite_images(
             node: bpy.types.Node,
             multiply: list[tuple[float, float, float]]) -> bpy.types.Node:
         """
-        Keyword arguments:
-            node -- start node
-            multiply -- color channel multiplier
-                [(1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]
+        Args:
+            node: start node
+            multiply: color channel multiplier
+              [(1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0)]
         """
         tree = scene.node_tree
         sep_node = tree.nodes.new('CompositorNodeSeparateColor')

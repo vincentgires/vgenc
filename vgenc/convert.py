@@ -54,7 +54,8 @@ def convert_image(
         **_) -> None:
     """Convert image using oiiotool or bpy
 
-    input_colorspace: needed for display_view.
+    Args:
+        input_colorspace: needed for display_view
     """
 
     if image_sequence:
@@ -188,8 +189,11 @@ def convert_movie(
         **_) -> None:
     """Convert to movie using ffmpeg
 
-    input_path: set frame number with printf syntax padding (%04d, %06d, etc).
-    frame_range: needed for missing frames, first item overrides start_number.
+    Args:
+        input_path:
+          set frame number with printf syntax padding (%04d, %06d, etc)
+        frame_range:
+          needed for missing frames, first item overrides start_number
     """
 
     if isinstance(input_path, str):
@@ -332,7 +336,9 @@ def convert_to_gif(
         bounce: bool = False) -> None:
     """Convert images to gif
 
-    input_path can be folder or list of image paths."""
+    Args:
+        input_path: it can be a folder directory or list of image paths
+    """
 
     if isinstance(input_path, str):
         if os.path.isdir(input_path):

@@ -6,7 +6,9 @@ def extract_frames_from_movie(
         **_) -> None:
     """Extract frames from movie using ffmpeg
 
-    output_path: set frame number with printf syntax padding (%04d, %06d, etc).
+    Args:
+        output_path:
+          set frame number with printf syntax padding (%04d, %06d, etc)
     """
     if isinstance(frames, int):
         frames = [frames]
