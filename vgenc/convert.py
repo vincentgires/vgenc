@@ -42,6 +42,7 @@ def convert_image(
         frame_range: tuple[int, int] = (1, 1),
         frame_jump: int = 1,
         # oiiotool options
+        crop: tuple[tuple[int, int]] | None = None,
         color_convert: tuple[str, str] | None = None,
         data_format: str | list | None = None,
         # bpy options
@@ -140,9 +141,14 @@ def convert_image(
     if display_view is not None:
         command.append('--ociodisplay')
         command.extend(display_view)
+    if crop is not None:
+        crop_size, crop_offset = crop
+        crop_size = 'x'.join(str(i) for i in crop_size)
+        crop_offset = '+'.join(str(i) for i in crop_offset)
+        command.extend(['--cut', f'{crop_size}+{crop_offset}'])
     if resize is not None:
-        x, y = resize
-        command.extend(['--resize', f'{x}x{y}'])
+        rx, ry = resize
+        command.extend(['--resize', f'{rx}x{ry}'])
     if compression is not None:
         command.extend(['--compression', compression])
     if data_format is not None:
