@@ -4,6 +4,7 @@ import shutil
 from subprocess import run
 from .files import (
     MissingFramesLiteral, get_frame_info, generate_missing_frames)
+from .probe import get_image_size
 try:
     import bpy  # Can be used as backend but shouldn't be mandatory
 except ImportError:
@@ -43,6 +44,7 @@ def convert_image(
         frame_jump: int = 1,
         # oiiotool options
         crop: tuple[tuple[int, int]] | None = None,
+        auto_crop: bool = False,
         color_convert: tuple[str, str] | None = None,
         data_format: str | list | None = None,
         # bpy options
@@ -57,6 +59,7 @@ def convert_image(
 
     Args:
         input_colorspace: needed for display_view
+        auto_crop: resize is mandatory
     """
 
     if image_sequence:
@@ -141,6 +144,13 @@ def convert_image(
     if display_view is not None:
         command.append('--ociodisplay')
         command.extend(display_view)
+    if auto_crop and resize is not None:
+        input_x, input_y = get_image_size(input_path)
+        resize_x, resize_y = resize
+        crop_offset = (
+            int((input_x - resize_x) / 2),
+            int((input_y - resize_y) / 2))
+        crop = (resize, crop_offset)
     if crop is not None:
         crop_size, crop_offset = crop
         crop_size = 'x'.join(str(i) for i in crop_size)
