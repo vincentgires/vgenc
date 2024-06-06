@@ -43,8 +43,10 @@ def convert_image(
         frame_range: tuple[int, int] = (1, 1),
         frame_jump: int = 1,
         # oiiotool options
+        auto_cut: bool = False,
+        cut: tuple[tuple[int, int]] | None = None,
         crop: tuple[tuple[int, int]] | None = None,
-        auto_crop: bool = False,
+        fit: tuple[int, int] | None = None,
         color_convert: tuple[str, str] | None = None,
         data_format: str | list | None = None,
         # bpy options
@@ -60,7 +62,7 @@ def convert_image(
 
     Args:
         input_colorspace: needed for display_view
-        auto_crop: resize is mandatory
+        auto_cut: resize is mandatory
     """
 
     if image_sequence:
@@ -84,8 +86,10 @@ def convert_image(
                 resize=resize,
                 compression=compression,
                 rgb_only=rgb_only,
+                auto_cut=auto_cut,
+                cut=cut,
                 crop=crop,
-                auto_crop=auto_crop,
+                fit=fit,
                 data_format=data_format,
                 use_bpy=use_bpy,
                 file_format=file_format,
@@ -157,18 +161,26 @@ def convert_image(
     if display_view is not None:
         command.append('--ociodisplay')
         command.extend(display_view)
-    if auto_crop and resize is not None:
+    if auto_cut and resize is not None:
         input_x, input_y = get_image_size(input_path)
         resize_x, resize_y = resize
-        crop_offset = (
+        cut_offset = (
             int((input_x - resize_x) / 2),
             int((input_y - resize_y) / 2))
-        crop = (resize, crop_offset)
+        cut = (resize, cut_offset)
+    if cut is not None:
+        cut_size, cut_offset = cut
+        cut_size = 'x'.join(str(i) for i in cut_size)
+        cut_offset = '+'.join(str(i) for i in cut_offset)
+        command.extend(['--cut', f'{cut_size}+{cut_offset}'])
     if crop is not None:
         crop_size, crop_offset = crop
         crop_size = 'x'.join(str(i) for i in crop_size)
         crop_offset = '+'.join(str(i) for i in crop_offset)
-        command.extend(['--cut', f'{crop_size}+{crop_offset}'])
+        command.extend(['--crop', f'{crop_size}+{crop_offset}'])
+    if fit is not None:
+        fx, fy = fit
+        command.extend(['--fit', f'{fx}x{fy}'])
     if resize is not None:
         rx, ry = resize
         command.extend(['--resize', f'{rx}x{ry}'])
@@ -200,7 +212,7 @@ def convert_movie(
         frame_range: tuple[int, int] | None = None,
         video_codec: str | None = None,
         video_quality: int | None = None,
-        video_bitrate: str | None = None,
+        video_bitrate: int | None = None,
         constrained_quality: int | None = None,
         audio_codec: str | None = None,
         audio_quality: int | None = None,
