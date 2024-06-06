@@ -54,6 +54,7 @@ def convert_image(
         color_depth: int | None = None,
         quality: int | None = None,
         codec: str | None = None,
+        additional_image_settings: dict | None = None,
         **_) -> None:
     """Convert image using oiiotool or bpy
 
@@ -63,19 +64,19 @@ def convert_image(
     """
 
     if image_sequence:
-        def build_path(path: str) -> str:
+        def build_path(path: str, frame: int) -> str:
             frame_info = get_frame_info(path)
             frame_path = (
                 f"{frame_info['start']}"
-                f"{frame:0{frame_info['digits']}d}"
+                f"{frame:0{frame_info['digits']}}"
                 f"{frame_info['end']}")
             return frame_path
 
         frame_start, frame_end = frame_range
         for frame in range(frame_start, frame_end + 1, frame_jump):
             convert_image(
-                input_path=build_path(input_path),
-                output_path=build_path(output_path),
+                input_path=build_path(input_path, frame=frame),
+                output_path=build_path(output_path, frame=frame),
                 input_colorspace=input_colorspace,
                 color_convert=color_convert,
                 look=look,
@@ -83,7 +84,15 @@ def convert_image(
                 resize=resize,
                 compression=compression,
                 rgb_only=rgb_only,
-                data_format=data_format)
+                crop=crop,
+                auto_crop=auto_crop,
+                data_format=data_format,
+                use_bpy=use_bpy,
+                file_format=file_format,
+                color_mode=color_mode,
+                color_depth=color_depth,
+                quality=quality,
+                codec=codec)
         return
 
     if use_bpy:
@@ -126,13 +135,17 @@ def convert_image(
                 if codec_attribute := codec_attributes.get(
                         image_settings.file_format):
                     setattr(image_settings, codec_attribute, codec.upper())
+            if additional_image_settings is not None:
+                for k, v in additional_image_settings.items():
+                    setattr(image_settings, k, v)
             image.save_render(filepath=output_path)
+        print(f'bpy: {output_path}')
         data.images.remove(image)
         return
 
-    command = ['oiiotool', '-v']
+    command = ['oiiotool']
     if rgb_only:
-        command.append(['-i:ch=R,G,B'])
+        command.append('-i:ch=R,G,B')
     command.append(input_path)
     if input_colorspace is not None:
         command.extend(['--iscolorspace', input_colorspace])
@@ -168,7 +181,9 @@ def convert_image(
         for d in df:
             command.extend(['-d', d])
     command.extend(['-o', output_path])
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     run(command)
+    print(f'oiiotool: {output_path}')
 
 
 def _replace_ext(file_path: str, ext: str) -> str:
