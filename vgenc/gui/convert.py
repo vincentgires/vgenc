@@ -53,16 +53,39 @@ color_depths = {
     '16 bits float': (16, 'float'),
     '32 bits float': 32}
 view_transforms = {
-    'Rec. 709': ('Rec.1886 Rec.709', 'ACES 1.0 - SDR Video'),
-    'DCDM': ('XYZ', 'DCDM'),
-    'ACES2065-1': None,
-    'sRGB': ('sRGB', 'ACES 1.0 - SDR Video')}
+    'Rec. 709': (
+        'Rec.1886 Rec.709',
+        'ACES 1.0 - SDR Video'),
+    'Rec. 2020': (
+        'Rec.1886 Rec.2020',
+        'ACES 1.1 - SDR Video (Rec.709 lim)'),
+    'Rec. 2100': (
+        'Rec.2100-PQ',
+        'ACES 1.1 - HDR Video (1000 nits & Rec.2020 lim)'),
+    'P3-DCI': (
+        'P3-DCI',
+        'ACES 1.1 - SDR Cinema (D65 sim on DCI)'),
+    'DCDM': (
+        'XYZ',
+        'DCDM'),
+    'sRGB': (
+        'sRGB',
+        'ACES 1.0 - SDR Video')}
 movie_containers = {
-    'MPEG-4': {'ext': '.mp4'},
-    'Quicktime': {'ext': '.mov'},
-    'WebM': {'ext': '.webm'},
-    'Matroska': {'ext': '.mkv'},
-    'Ogg': {'ext': '.ogg'}}
+    'MPEG-4': {
+        'ext': '.mp4',
+        'codecs': ['H264', 'H265', 'MJPEG']},
+    'Quicktime': {
+        'ext': '.mov',
+        'codecs': ['H264', 'MJPEG']},
+    'WebM': {
+        'ext': '.webm',
+        'codecs': ['VP9']},
+    'Matroska': {
+        'ext': '.mkv'},
+    'Ogg': {
+        'ext': '.ogg',
+        'codecs': ['Theora']}}
 movie_codecs = {
     'H264': {'codec': 'h264', 'crf': 25, 'bitrate': 0},
     'H265': {'codec': 'h265', 'crf': 25, 'bitrate': 0},
@@ -287,6 +310,14 @@ def on_update_selection(event):
         available_color_depths = file_formats[selected_file_format].get(
             'color_depths', color_depths.keys())
         fill_listbox(color_depths_listbox, available_color_depths, clear=True)
+
+    # Adapt movie codecs from movie container selected
+    if event.widget is movie_containers_listbox:
+        selected_movie_container = get_listbox_selection_values(
+            movie_containers_listbox, multiple=False)
+        available_movie_codecs = movie_containers[selected_movie_container].get(
+            'codecs', movie_codecs.keys())
+        fill_listbox(movie_codecs_listbox, available_movie_codecs, clear=True)
 
     # Check validity of combinaison
     data_selection = get_current_selection()
