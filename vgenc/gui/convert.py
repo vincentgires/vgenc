@@ -334,6 +334,10 @@ output_dialog_button = Button(
     text='Output Directory',
     command=partial(set_entry, entry=output_entry, value=askdirectory))
 batch_selection_listbox = Listbox(batch_selection_frame, exportselection=False)
+clear_batch_selection_button = Button(
+    batch_selection_frame,
+    text='Clear',
+    command=partial(clear_batch_selection))
 
 fill_listbox(resolutions_listbox, resolutions)
 fill_listbox(file_formats_listbox, file_formats)
@@ -361,6 +365,7 @@ add_button.pack(fill='both')
 convert_button.pack(fill='both')
 batch_selection_frame.pack(fill='both', expand=True)
 batch_selection_listbox.pack(fill='both', expand=True)
+clear_batch_selection_button.pack(fill='both')
 
 if __name__ == '__main__':
     set_entry(entry=input_entry, value='$HOME/input/image.####.exr')
