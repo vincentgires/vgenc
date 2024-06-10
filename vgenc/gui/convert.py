@@ -46,12 +46,12 @@ file_formats = {
     'TIFF': {
         'compression': 'none', 'ext': '.tif'}}
 color_depths = {
-    '8 bits': 8,
-    '10 bits': 10,
-    '12 bits': 12,
+    '8 bits': (8,),
+    '10 bits': (10,),
+    '12 bits': (12,),
     '16 bits integer': (16, 'integer'),
     '16 bits float': (16, 'float'),
-    '32 bits float': 32}
+    '32 bits float': (32, 'float')}
 view_transforms = {
     'Rec. 709': (
         'Rec.1886 Rec.709',
@@ -95,12 +95,12 @@ movie_codecs = {
     'Theora': {'codec': 'theora', 'quality': 7}}
 
 _oiiotool_bit_depths = {
-    8: 'uint8',
-    10: 'uint10',
-    12: 'uint12',
+    (8,): 'uint8',
+    (10,): 'uint10',
+    (12,): 'uint12',
     (16, 'integer'): 'uint16',
     (16, 'float'): 'half',
-    32: 'float'}
+    (32, 'float'): 'float'}
 
 batch_selection: list[dict] = []
 
@@ -192,13 +192,12 @@ def convert():
                 output_path=output_image,
                 input_colorspace='Raw',
                 display_view=('None', 'Raw'),
-                data_format=oiio_color_depth,
                 frame_range=input_range,
                 image_sequence=True,
                 use_bpy=True,
                 file_format='JPEG2000',
                 color_mode='RGB',
-                color_depth=color_depth,
+                color_depth=color_depth_value[0],
                 quality=None,  # Use cinema presets instead
                 codec='J2K',
                 additional_image_settings={
