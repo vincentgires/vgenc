@@ -17,17 +17,34 @@ input_colorspaces = [
     'Linear sRGB',
     'sRGB - Texture']
 resolutions = {
-    '2k full': {'cut': (2048, 1080)},
-    '2k scope': {'cut': (2048, 858)},
-    '2k flat': {'cut': (1998, 1080)},
-    'HD scope letterbox': {'cut': (2048, 858), 'fit': (1920, 1080)},
-    'DVD PAL scope letterbox': {'cut': (2048, 858), 'fit': (720, 576)}}
+    '2k full': {
+        'cut': (2048, 1080)},
+    '2k scope': {
+        'cut': (2048, 858)},
+    '2k flat': {
+        'cut': (1998, 1080)},
+    'HD scope letterbox': {
+        'cut': (2048, 858),
+        'fit': (1920, 1080)},
+    'DVD PAL scope letterbox': {
+        'cut': (2048, 858),
+        'fit': (720, 576)}}
 file_formats = {
-    'JPEG': {'compression': 'jpeg:95', 'ext': '.jpg'},
-    'JPEG 2000': {'ext': '.j2c'},
-    'DPX': {'ext': '.dpx'},
-    'Open EXR': {'ext': '.exr'},
-    'TIFF': {'compression': 'none', 'ext': '.tif'}}
+    'JPEG': {
+        'compression': 'jpeg:95',
+        'ext': '.jpg',
+        'color_depths': ['8 bits']},
+    'JPEG 2000': {
+        'ext': '.j2c',
+        'color_depths': ['8 bits', '12 bits', '16 bits integer']},
+    'DPX': {
+        'ext': '.dpx',
+        'color_depths': ['8 bits', '10 bits', '12 bits', '16 bits integer']},
+    'Open EXR': {
+        'ext': '.exr',
+        'color_depths': ['16 bits float', '32 bits float']},
+    'TIFF': {
+        'compression': 'none', 'ext': '.tif'}}
 color_depths = {
     '8 bits': 8,
     '10 bits': 10,
@@ -211,7 +228,9 @@ def convert():
     clear_batch_selection()
 
 
-def fill_listbox(listbox: Listbox, items: Iterable[str]):
+def fill_listbox(listbox: Listbox, items: Iterable[str], clear: bool = False):
+    if clear:
+        listbox.delete(0, 'end')
     for i, x in enumerate(items):
         listbox.insert(listbox.size(), x)
 
@@ -261,10 +280,19 @@ def get_current_selection():
 
 
 def on_update_selection(event):
+    # Adapt color depths from file format selected
+    if event.widget is file_formats_listbox:
+        selected_file_format = get_listbox_selection_values(
+            file_formats_listbox, multiple=False)
+        available_color_depths = file_formats[selected_file_format].get(
+            'color_depths', color_depths.keys())
+        fill_listbox(color_depths_listbox, available_color_depths, clear=True)
+
+    # Check validity of combinaison
     data_selection = get_current_selection()
     image_data_enum = [
-        'resolutions', 'file_formats', 'color_depths', 'view_transforms']
-    movie_data_enum = ['movie_containers', 'movie_codecs']
+        'resolution', 'file_format', 'color_depth', 'view_transform']
+    movie_data_enum = ['movie_container', 'movie_codec']
     image_data_values = [
         v for k, v in data_selection.items() if k in image_data_enum]
     movie_data_values = [
