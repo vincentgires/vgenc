@@ -127,14 +127,12 @@ def convert():
             f"image.{'#' * frame_info['digits']}{file_ext}")
 
         # Image convertion
-        # Special case for JPEG 2000: openimageio can't create j2c
-        # file format and set it's bitrate. Instead, temporary tiff
-        # are created from oiiotool and converted with bpy to j2c
-        # with cinema bitrate.
-        # bpy as convert backend could be used directly without
-        # intermediary tiff files and should reduce compute time
-        # but the crop and aspect ratio feature needs to be
-        # implemented.
+        # Special case for JPEG 2000: openimageio can't create j2c file format
+        # and set it's bitrate. Instead, temporary tiff are created from
+        # oiiotool and converted with bpy to j2c with cinema bitrate.
+        # bpy as convert backend could be used directly without intermediary
+        # tiff files and should reduce compute time but the crop and aspect
+        # ratio feature needs to be implemented.
         if file_format == 'JPEG 2000':
             tmp_output = f'{output_image}.tmp.tif'
             convert_image(
