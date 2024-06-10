@@ -1,3 +1,4 @@
+# TODO: stereo
 # TODO: add ocio looks
 # TODO: read ocio config for listing colorspaces, view transforms and looks
 
@@ -105,6 +106,78 @@ _oiiotool_bit_depths = {
 batch_selection: list[dict] = []
 
 
+def _convert_image(
+        input_path: str,
+        output_path: str,
+        frame_range: tuple[int, int],
+        cut: tuple[int, int],
+        fit: tuple[int, int],
+        file_format: str,
+        file_compression: str,
+        data_format: str,
+        color_depth: int,
+        input_colorspace: str,
+        display_view: tuple[str, str]):
+    frame_info = get_frame_info(input_path)
+    if file_format == 'JPEG 2000':
+        # Special case for JPEG 2000: openimageio can't create j2c file format
+        # and set it's bitrate. Instead, temporary tiff are created from
+        # oiiotool and converted with bpy to j2c with cinema bitrate.
+        # bpy as convert backend could be used directly without intermediary
+        # tiff files and should reduce compute time but the crop and aspect
+        # ratio feature needs to be implemented.
+        tmp_output = f'{output_path}.tmp.tif'
+        convert_image(
+            input_path=input_path,
+            output_path=tmp_output,
+            input_colorspace=input_colorspace,
+            display_view=display_view,
+            cut=cut,
+            fit=fit,
+            compression=file_compression,
+            rgb_only=True,
+            data_format=data_format,
+            frame_range=frame_range,
+            image_sequence=True)
+        convert_image(
+            input_path=tmp_output,
+            output_path=output_path,
+            input_colorspace='Raw',
+            display_view=('None', 'Raw'),
+            frame_range=frame_range,
+            image_sequence=True,
+            use_bpy=True,
+            file_format='JPEG2000',
+            color_mode='RGB',
+            color_depth=color_depth,
+            quality=None,  # Use cinema presets instead
+            codec='J2K',
+            additional_image_settings={
+                'use_jpeg2k_cinema_preset': True,
+                'use_jpeg2k_cinema_48': True})
+        # Remove temp files
+        frame_start, frame_end = frame_range
+        for frame in range(frame_start, frame_end + 1):
+            file_path = tmp_output.replace(
+                '#' * frame_info['digits'],
+                f"{frame:0{frame_info['digits']}}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+    else:
+        convert_image(
+            input_path=input_path,
+            output_path=output_path,
+            input_colorspace=input_colorspace,
+            display_view=display_view,
+            cut=cut,
+            fit=fit,
+            compression=file_compression,
+            rgb_only=True,
+            data_format=data_format,
+            frame_range=frame_range,
+            image_sequence=True)
+
+
 def convert():
     input_path = os.path.expandvars(input_entry.get())
     output_path = os.path.expandvars(output_entry.get())
@@ -167,63 +240,18 @@ def convert():
             f"image.{'#' * frame_info['digits']}{file_ext}")
 
         # Image convertion
-        # Special case for JPEG 2000: openimageio can't create j2c file format
-        # and set it's bitrate. Instead, temporary tiff are created from
-        # oiiotool and converted with bpy to j2c with cinema bitrate.
-        # bpy as convert backend could be used directly without intermediary
-        # tiff files and should reduce compute time but the crop and aspect
-        # ratio feature needs to be implemented.
-        if file_format == 'JPEG 2000':
-            tmp_output = f'{output_image}.tmp.tif'
-            convert_image(
-                input_path=input_path,
-                output_path=tmp_output,
-                input_colorspace=input_colorspace_variable.get(),
-                display_view=view_transform_value,
-                cut=cut,
-                resize=fit,
-                compression=file_compression,
-                rgb_only=True,
-                data_format=oiio_color_depth,
-                frame_range=input_range,
-                image_sequence=True)
-            convert_image(
-                input_path=tmp_output,
-                output_path=output_image,
-                input_colorspace='Raw',
-                display_view=('None', 'Raw'),
-                frame_range=input_range,
-                image_sequence=True,
-                use_bpy=True,
-                file_format='JPEG2000',
-                color_mode='RGB',
-                color_depth=color_depth_value[0],
-                quality=None,  # Use cinema presets instead
-                codec='J2K',
-                additional_image_settings={
-                    'use_jpeg2k_cinema_preset': True,
-                    'use_jpeg2k_cinema_48': True})
-            # Remove temp files
-            frame_start, frame_end = input_range
-            for frame in range(frame_start, frame_end + 1):
-                file_path = tmp_output.replace(
-                    '#' * frame_info['digits'],
-                    f"{frame:0{frame_info['digits']}}")
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-        else:
-            convert_image(
-                input_path=input_path,
-                output_path=output_image,
-                input_colorspace=input_colorspace_variable.get(),
-                display_view=view_transform_value,
-                cut=cut,
-                resize=fit,
-                compression=file_compression,
-                rgb_only=True,
-                data_format=oiio_color_depth,
-                frame_range=input_range,
-                image_sequence=True)
+        _convert_image(
+            input_path=input_path,
+            output_path=output_image,
+            frame_range=input_range,
+            cut=cut,
+            fit=fit,
+            file_format=file_format,
+            file_compression=file_compression,
+            data_format=oiio_color_depth,
+            color_depth=color_depth_value[0],
+            input_colorspace=input_colorspace_variable.get(),
+            display_view=view_transform_value,)
 
         # Movie
         if all(x is not None for x in (movie_container, movie_codec)):
