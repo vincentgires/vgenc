@@ -8,9 +8,10 @@ from tkinter import (
 from tkinter.filedialog import askopenfilename, askdirectory
 from functools import partial
 from typing import Callable, Iterable
-from ..convert import convert_image, convert_movie
+from ..convert import convert_movie
 from ..files import get_frame_info, find_image_sequence_range
 from ..probe import get_image_size
+from ..batch import batch_convert_image
 
 input_colorspaces = [
     'ACES2065-1',
@@ -106,79 +107,9 @@ _oiiotool_bit_depths = {
 batch_selection: list[dict] = []
 
 
-def _convert_image(
-        input_path: str,
-        output_path: str,
-        frame_range: tuple[int, int],
-        cut: tuple[int, int],
-        fit: tuple[int, int],
-        file_format: str,
-        file_compression: str,
-        data_format: str,
-        color_depth: int,
-        input_colorspace: str,
-        display_view: tuple[str, str]):
-    frame_info = get_frame_info(input_path)
-    if file_format == 'JPEG 2000':
-        # Special case for JPEG 2000: openimageio can't create j2c file format
-        # and set it's bitrate. Instead, temporary tiff are created from
-        # oiiotool and converted with bpy to j2c with cinema bitrate.
-        # bpy as convert backend could be used directly without intermediary
-        # tiff files and should reduce compute time but the crop and aspect
-        # ratio feature needs to be implemented.
-        tmp_output = f'{output_path}.tmp.tif'
-        convert_image(
-            input_path=input_path,
-            output_path=tmp_output,
-            input_colorspace=input_colorspace,
-            display_view=display_view,
-            cut=cut,
-            fit=fit,
-            compression=file_compression,
-            rgb_only=True,
-            data_format=data_format,
-            frame_range=frame_range,
-            image_sequence=True)
-        convert_image(
-            input_path=tmp_output,
-            output_path=output_path,
-            input_colorspace='Raw',
-            display_view=('None', 'Raw'),
-            frame_range=frame_range,
-            image_sequence=True,
-            use_bpy=True,
-            file_format='JPEG2000',
-            color_mode='RGB',
-            color_depth=color_depth,
-            quality=None,  # Use cinema presets instead
-            codec='J2K',
-            additional_image_settings={
-                'use_jpeg2k_cinema_preset': True,
-                'use_jpeg2k_cinema_48': True})
-        # Remove temp files
-        frame_start, frame_end = frame_range
-        for frame in range(frame_start, frame_end + 1):
-            file_path = tmp_output.replace(
-                '#' * frame_info['digits'],
-                f"{frame:0{frame_info['digits']}}")
-            if os.path.exists(file_path):
-                os.remove(file_path)
-    else:
-        convert_image(
-            input_path=input_path,
-            output_path=output_path,
-            input_colorspace=input_colorspace,
-            display_view=display_view,
-            cut=cut,
-            fit=fit,
-            compression=file_compression,
-            rgb_only=True,
-            data_format=data_format,
-            frame_range=frame_range,
-            image_sequence=True)
-
-
-def convert():
+def convert(
+        exec_image_convert: Callable = batch_convert_image,
+        exec_movie_convert: Callable = convert_movie):
     input_path = os.path.expandvars(input_entry.get())
     output_path = os.path.expandvars(output_entry.get())
     frame_info = get_frame_info(input_path)
@@ -191,6 +122,7 @@ def convert():
         suffix=frame_info['end'])
     if input_range is None:
         return
+    frame_jump = 1
 
     first_frame_path = (
         f"{frame_info['start']}"
@@ -239,19 +171,18 @@ def convert():
             expanded_output_dir,
             f"image.{'#' * frame_info['digits']}{file_ext}")
 
-        # Image convertion
-        _convert_image(
+        exec_image_convert(
             input_path=input_path,
             output_path=output_image,
             frame_range=input_range,
+            frame_jump=frame_jump,
             cut=cut,
             fit=fit,
-            file_format=file_format,
-            file_compression=file_compression,
+            compression=file_compression,
             data_format=oiio_color_depth,
             color_depth=color_depth_value[0],
             input_colorspace=input_colorspace_variable.get(),
-            display_view=view_transform_value,)
+            display_view=view_transform_value)
 
         # Movie
         if all(x is not None for x in (movie_container, movie_codec)):
@@ -266,7 +197,7 @@ def convert():
                 '#' * frame_info['digits'], f"%0{frame_info['digits']}d")
             output_movie = os.path.join(
                 expanded_output_dir, f'movie.{movie_codec}{movie_ext}')
-            convert_movie(
+            exec_movie_convert(
                 input_path=printf_input_path,
                 output_path=output_movie,
                 start_number=input_range[0],
@@ -306,7 +237,7 @@ main.title('Convert')
 
 format_selecion_frame = LabelFrame(main, borderwidth=1, text='Image')
 movie_format_selecion_frame = LabelFrame(main, borderwidth=1, text='Movie')
-batch_selection_frame = LabelFrame(main, borderwidth=1, text='Batch selection')
+batch_selection_frame = LabelFrame(main, borderwidth=1, text='Batch Selection')
 entry_frame = Frame(main, borderwidth=1)
 entry_frame.columnconfigure(0, weight=1)
 action_frame = Frame(main, borderwidth=1)
@@ -342,8 +273,8 @@ def on_update_selection(event):
     if event.widget is movie_containers_listbox:
         selected_movie_container = get_listbox_selection_values(
             movie_containers_listbox, multiple=False)
-        available_movie_codecs = movie_containers[selected_movie_container].get(
-            'codecs', movie_codecs.keys())
+        available_movie_codecs = movie_containers[
+            selected_movie_container].get('codecs', movie_codecs.keys())
         fill_listbox(movie_codecs_listbox, available_movie_codecs, clear=True)
 
     # Check validity of combinaison
