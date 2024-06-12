@@ -75,7 +75,8 @@ def convert_image(
             return frame_path
 
         frame_start, frame_end = frame_range
-        for frame in range(frame_start, frame_end + 1, frame_jump):
+        all_frames = range(frame_start, frame_end + 1, frame_jump)
+        for index, frame in enumerate(all_frames):
             convert_image(
                 input_path=build_path(input_path, frame=frame),
                 output_path=build_path(output_path, frame=frame),
@@ -97,6 +98,8 @@ def convert_image(
                 color_depth=color_depth,
                 quality=quality,
                 codec=codec)
+            percentage = ((index + 1) * 100) / len(all_frames)
+            print(f'Progress: {round(percentage)}%')
         return
 
     if use_bpy:
