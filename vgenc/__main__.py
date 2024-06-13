@@ -37,11 +37,15 @@ parser.add_argument(
 parser.add_argument(
     '-vc', '--video-codec', required=False, metavar='name')
 parser.add_argument(
+    '-vp', '--video-profile', required=False, metavar='name')
+parser.add_argument(
     '-vq', '--video-quality', required=False, type=int, metavar='number')
 parser.add_argument(
     '-vb', '--video-bitrate', required=False, metavar='value')
 parser.add_argument(
     '-cq', '--constrained-quality', required=False, type=int, metavar='number')
+parser.add_argument(
+    '--pixel-format', required=False, metavar='value')
 parser.add_argument(
     '-ac', '--audio-codec', required=False, metavar='name')
 parser.add_argument(

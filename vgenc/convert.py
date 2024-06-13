@@ -17,7 +17,8 @@ ffmpeg_video_codecs = {
     'theora': 'libtheora',
     'mjpeg': 'mjpeg',
     'h264': 'libx264',
-    'h265': 'libx265'}
+    'h265': 'libx265',
+    'prores': 'prores_ks'}
 ffmpeg_audio_codecs = {
     'copy': 'copy',
     'flac': 'flac',
@@ -214,9 +215,11 @@ def convert_movie(
         missing_frames: MissingFramesLiteral | None = None,
         frame_range: tuple[int, int] | None = None,
         video_codec: str | None = None,
+        video_profile: str | None = None,
         video_quality: int | None = None,
         video_bitrate: int | None = None,
         constrained_quality: int | None = None,
+        pixel_format: str | None = None,
         audio_codec: str | None = None,
         audio_quality: int | None = None,
         audio_bitrate: str | None = None,
@@ -329,6 +332,11 @@ def convert_movie(
     if video_codec is not None:
         vc = ffmpeg_video_codecs.get(video_codec, video_codec)
         command.extend(['-c:v', vc])
+        if video_codec in ('prores', 'prores_ks', ):
+            command.extend(['-vendor', 'apl0'])  # Treat the file as if it was
+            # created by the Apple ProRes encoder
+    if video_profile is not None:
+        command.extend(['-profile:v', video_profile])
     if video_quality is not None:
         command.extend(['-q:v', str(video_quality)])
     if constrained_quality is not None:
@@ -337,6 +345,8 @@ def convert_movie(
         # to enable constant quality instead of constrained quality, bitrate
         # should be set to 0.
         command.extend(['-b:v', str(video_bitrate)])
+    if pixel_format is not None:
+        command.extend(['-pix_fmt', pixel_format])
     build_filter(command)
     if two_pass:
         first_pass_command = command.copy()

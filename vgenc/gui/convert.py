@@ -46,7 +46,9 @@ file_formats = {
         'ext': '.exr',
         'color_depths': ['16 bits float', '32 bits float']},
     'TIFF': {
-        'compression': 'none', 'ext': '.tif'}}
+        'compression': 'none',
+        'ext': '.tif',
+        'color_depths': ['8 bits', '16 bits integer']}}
 color_depths = {
     '8 bits': (8,),
     '10 bits': (10,),
@@ -79,7 +81,7 @@ movie_containers = {
         'codecs': ['H264', 'H265', 'MJPEG']},
     'Quicktime': {
         'ext': '.mov',
-        'codecs': ['H264', 'MJPEG']},
+        'codecs': ['H264', 'MJPEG', 'ProRes 422 HQ', 'ProRes 4444']},
     'WebM': {
         'ext': '.webm',
         'codecs': ['VP9']},
@@ -87,14 +89,41 @@ movie_containers = {
         'ext': '.mkv'},
     'Ogg': {
         'ext': '.ogg',
-        'codecs': ['Theora']}}
+        'codecs': ['Theora']},
+    'MXF': {
+        'ext': '.mxf',
+        'codecs': ['ProRes 422 HQ', 'ProRes 4444']}}
 movie_codecs = {
-    'H264': {'codec': 'h264', 'crf': 25, 'bitrate': 0},
-    'H265': {'codec': 'h265', 'crf': 25, 'bitrate': 0},
-    'VP9': {'codec': 'vp9', 'crf': 25, 'bitrate': 0},
-    'AV1': {'codec': 'av1', 'crf': 25, 'bitrate': 0},
-    'MJPEG': {'codec': 'mjpeg', 'quality': 2},
-    'Theora': {'codec': 'theora', 'quality': 7}}
+    'H264': {
+        'codec': 'h264',
+        'crf': 25,
+        'bitrate': 0},
+    'H265': {
+        'codec': 'h265',
+        'crf': 25,
+        'bitrate': 0},
+    'ProRes 422 HQ': {
+        'codec': 'prores',
+        'profile': '3',
+        'pixel_format': 'yuv422p10le'},
+    'ProRes 4444': {
+        'codec': 'prores',
+        'profile': '4',
+        'pixel_format': 'yuva444p10le'},
+    'VP9': {
+        'codec': 'vp9',
+        'crf': 25,
+        'bitrate': 0},
+    'AV1': {
+        'codec': 'av1',
+        'crf': 25,
+        'bitrate': 0},
+    'MJPEG': {
+        'codec': 'mjpeg',
+        'quality': 2},
+    'Theora': {
+        'codec': 'theora',
+        'quality': 7}}
 
 _oiiotool_bit_depths = {
     (8,): 'uint8',
@@ -190,7 +219,9 @@ def convert(
             movie_quality = movie_codec_value.get('quality')
             movie_crf = movie_codec_value.get('crf')
             movie_bitrate = movie_codec_value.get('bitrate')
-            movie_encoder_codec_name = movie_codec_value.get('codec')
+            movie_encoder_codec = movie_codec_value.get('codec')
+            movie_encoder_profile = movie_codec_value.get('profile')
+            movie_encoder_pixfmt = movie_codec_value.get('pixel_format')
 
             # Movie encoding
             printf_input_path = output_image.replace(
@@ -201,10 +232,12 @@ def convert(
                 input_path=printf_input_path,
                 output_path=output_movie,
                 start_number=input_range[0],
-                video_codec=movie_encoder_codec_name,
+                video_codec=movie_encoder_codec,
+                video_profile=movie_encoder_profile,
                 video_quality=movie_quality,
                 constrained_quality=movie_crf,
-                video_bitrate=movie_bitrate)
+                video_bitrate=movie_bitrate,
+                pixel_format=movie_encoder_pixfmt)
 
     clear_batch_selection()
 
