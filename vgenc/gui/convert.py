@@ -19,16 +19,24 @@ input_colorspaces = [
     'Linear sRGB',
     'sRGB - Texture']
 resolutions = {
-    '2k full': {
+    '2k Full': {
         'cut': (2048, 1080)},
-    '2k scope': {
+    '2k Scope': {
         'cut': (2048, 858)},
-    '2k flat': {
+    '2k Flat': {
         'cut': (1998, 1080)},
-    'HD scope letterbox': {
+    'HD': {
+        'cut': (1920, 1080)},
+    'HD Scope Letterbox': {
         'cut': (2048, 858),
         'fit': (1920, 1080)},
-    'DVD PAL scope letterbox': {
+    'HD Full Letterbox': {
+        'cut': (2048, 1080),
+        'fit': (1920, 1080)},
+    'HD Flat Letterbox': {
+        'cut': (1998, 1080),
+        'fit': (1920, 1080)},
+    'DVD PAL Scope Letterbox': {
         'cut': (2048, 858),
         'fit': (720, 576)}}
 file_formats = {
