@@ -288,7 +288,7 @@ main.title('Convert')
 format_selecion_frame = LabelFrame(main, borderwidth=1, text='Image')
 movie_format_selecion_frame = LabelFrame(main, borderwidth=1, text='Movie')
 batch_selection_frame = LabelFrame(main, borderwidth=1, text='Batch Selection')
-entry_frame = Frame(main, borderwidth=1)
+entry_frame = LabelFrame(main, borderwidth=1, text='IO')
 entry_frame.columnconfigure(0, weight=1)
 frame_range_frame = Frame(main, borderwidth=1)
 frame_range_frame.columnconfigure(0, weight=1)
@@ -312,6 +312,30 @@ def get_current_selection():
     return data
 
 
+def set_combinaison_validity():
+    """Check validity of combinaison"""
+    data_selection = get_current_selection()
+    image_data_enum = [
+        'resolution', 'file_format', 'color_depth', 'view_transform']
+    movie_data_enum = ['movie_container', 'movie_codec']
+    image_data_values = [
+        v for k, v in data_selection.items() if k in image_data_enum]
+    movie_data_values = [
+        v for k, v in data_selection.items() if k in movie_data_enum]
+    m_ok = all(movie_data_values) or all(x is None for x in movie_data_values)
+    if all(image_data_values) and m_ok:
+        add_to_batch_selection_button.config(state='normal')
+    else:
+        add_to_batch_selection_button.config(state='disabled')
+
+
+def on_rightclick(event):
+    # Unselect
+    event.widget.selection_clear(0, 'end')
+
+    set_combinaison_validity()
+
+
 def on_update_selection(event):
     # Adapt color depths from file format selected
     if event.widget is file_formats_listbox:
@@ -329,20 +353,7 @@ def on_update_selection(event):
             selected_movie_container].get('codecs', movie_codecs.keys())
         fill_listbox(movie_codecs_listbox, available_movie_codecs, clear=True)
 
-    # Check validity of combinaison
-    data_selection = get_current_selection()
-    image_data_enum = [
-        'resolution', 'file_format', 'color_depth', 'view_transform']
-    movie_data_enum = ['movie_container', 'movie_codec']
-    image_data_values = [
-        v for k, v in data_selection.items() if k in image_data_enum]
-    movie_data_values = [
-        v for k, v in data_selection.items() if k in movie_data_enum]
-    m_ok = all(movie_data_values) or all(x is None for x in movie_data_values)
-    if all(image_data_values) and m_ok:
-        add_button.config(state='normal')
-    else:
-        add_button.config(state='disabled')
+    set_combinaison_validity()
 
 
 def add_config_to_batch_selection():
@@ -367,35 +378,30 @@ def frame_range_checkbox_command():
             entry_widget.config(state='normal')
 
 
-add_button = Button(
-    action_frame,
-    text='Add',
-    command=add_config_to_batch_selection)
-add_button.config(state='disabled')
-convert_button = Button(
-    action_frame,
-    text='Convert',
-    command=convert)
-convert_button.config(state='disabled')
-
 resolutions_listbox = Listbox(
     format_selecion_frame, exportselection=False, selectmode='browse')
 resolutions_listbox.bind('<<ListboxSelect>>', on_update_selection)
+resolutions_listbox.bind('<Button-3>', on_rightclick)
 file_formats_listbox = Listbox(
     format_selecion_frame, exportselection=False, selectmode='browse')
 file_formats_listbox.bind('<<ListboxSelect>>', on_update_selection)
+file_formats_listbox.bind('<Button-3>', on_rightclick)
 color_depths_listbox = Listbox(
     format_selecion_frame, exportselection=False, selectmode='browse')
 color_depths_listbox.bind('<<ListboxSelect>>', on_update_selection)
+color_depths_listbox.bind('<Button-3>', on_rightclick)
 view_transforms_listbox = Listbox(
     format_selecion_frame, exportselection=False, selectmode='browse')
 view_transforms_listbox.bind('<<ListboxSelect>>', on_update_selection)
+view_transforms_listbox.bind('<Button-3>', on_rightclick)
 movie_containers_listbox = Listbox(
     movie_format_selecion_frame, exportselection=False, selectmode='browse')
 movie_containers_listbox.bind('<<ListboxSelect>>', on_update_selection)
+movie_containers_listbox.bind('<Button-3>', on_rightclick)
 movie_codecs_listbox = Listbox(
     movie_format_selecion_frame, exportselection=False, selectmode='browse')
 movie_codecs_listbox.bind('<<ListboxSelect>>', on_update_selection)
+movie_codecs_listbox.bind('<Button-3>', on_rightclick)
 input_entry = Entry(entry_frame)
 input_colorspace_variable = StringVar(main)
 input_colorspace_variable.set(input_colorspaces[0])
@@ -423,10 +429,20 @@ set_entry(entry=frame_jump_entry, value='1')
 for frwidget in (frame_start_entry, frame_end_entry, frame_jump_entry):
     frwidget.config(state='disabled')
 batch_selection_listbox = Listbox(batch_selection_frame, exportselection=False)
+add_to_batch_selection_button = Button(
+    batch_selection_frame,
+    text='Add',
+    command=add_config_to_batch_selection)
+add_to_batch_selection_button.config(state='disabled')
 clear_batch_selection_button = Button(
     batch_selection_frame,
     text='Clear',
     command=partial(clear_batch_selection))
+convert_button = Button(
+    action_frame,
+    text='Convert',
+    command=convert)
+convert_button.config(state='disabled')
 
 fill_listbox(resolutions_listbox, resolutions)
 fill_listbox(file_formats_listbox, file_formats)
@@ -437,7 +453,16 @@ fill_listbox(movie_codecs_listbox, movie_codecs)
 
 format_selecion_frame.pack(fill='both', expand=True)
 movie_format_selecion_frame.pack(fill='both', expand=True)
+batch_selection_frame.pack(fill='both', expand=True)
+batch_selection_listbox.pack(fill='both', expand=True)
+add_to_batch_selection_button.pack(fill='both')
+clear_batch_selection_button.pack(fill='both')
 entry_frame.pack(fill='both')
+frame_range_frame.pack(fill='both', expand=True)
+frame_range_checkbox.grid(row=0, column=0, sticky='news')
+frame_start_entry.grid(row=0, column=1, sticky='news')
+frame_end_entry.grid(row=0, column=2, sticky='news')
+frame_jump_entry.grid(row=0, column=3, sticky='news')
 action_frame.pack(fill='both')
 resolutions_listbox.pack(side='left', fill='both', expand=True)
 file_formats_listbox.pack(side='left', fill='both', expand=True)
@@ -450,16 +475,7 @@ input_colorspace_choice.grid(row=0, column=1, sticky='news')
 input_dialog_button.grid(row=0, column=2, sticky='news')
 output_entry.grid(row=1, column=0, columnspan=2, sticky='news')
 output_dialog_button.grid(row=1, column=2, sticky='news')
-frame_range_frame.pack(fill='both', expand=True)
-frame_range_checkbox.grid(row=0, column=0, sticky='news')
-frame_start_entry.grid(row=0, column=1, sticky='news')
-frame_end_entry.grid(row=0, column=2, sticky='news')
-frame_jump_entry.grid(row=0, column=3, sticky='news')
-add_button.pack(fill='both')
 convert_button.pack(fill='both')
-batch_selection_frame.pack(fill='both', expand=True)
-batch_selection_listbox.pack(fill='both', expand=True)
-clear_batch_selection_button.pack(fill='both')
 
 if __name__ == '__main__':
     set_entry(entry=input_entry, value='$HOME/input/image.####.exr')
