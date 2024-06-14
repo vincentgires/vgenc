@@ -1,10 +1,12 @@
 # TODO: stereo
 # TODO: add ocio looks
 # TODO: read ocio config for listing colorspaces, view transforms and looks
+# TODO: image preview
 
 import os
 from tkinter import (
-    Tk, Listbox, Entry, Button, Frame, LabelFrame, StringVar, OptionMenu)
+    Tk, Listbox, Entry, Button, Frame, LabelFrame, StringVar, IntVar,
+    OptionMenu, Checkbutton)
 from tkinter.filedialog import askopenfilename, askdirectory
 from functools import partial
 from typing import Callable, Iterable
@@ -152,19 +154,26 @@ def convert(
     frame_info = get_frame_info(input_path)
     if frame_info is None:
         return
-    input_range = find_image_sequence_range(
-        path=input_path,
-        digits=frame_info['digits'],
-        prefix=frame_info['start'],
-        suffix=frame_info['end'])
-    if input_range is None:
-        return
-    frame_jump = 1
+    if frame_range_variable.get():
+        input_range = (
+            int(frame_start_entry.get()), int(frame_end_entry.get()))
+        frame_jump = int(frame_jump_entry.get())
+    else:
+        input_range = find_image_sequence_range(
+            path=input_path,
+            digits=frame_info['digits'],
+            prefix=frame_info['start'],
+            suffix=frame_info['end'])
+        if input_range is None:
+            return
+        frame_jump = 1
 
     first_frame_path = (
         f"{frame_info['start']}"
         f"{input_range[0]:0{frame_info['digits']}}"
         f"{frame_info['end']}")
+    if not os.path.exists(first_frame_path):
+        raise IOError(f'Cannot find file: {first_frame_path}')
     input_x, input_y = get_image_size(first_frame_path)
 
     for data in batch_selection:
@@ -281,6 +290,8 @@ movie_format_selecion_frame = LabelFrame(main, borderwidth=1, text='Movie')
 batch_selection_frame = LabelFrame(main, borderwidth=1, text='Batch Selection')
 entry_frame = Frame(main, borderwidth=1)
 entry_frame.columnconfigure(0, weight=1)
+frame_range_frame = Frame(main, borderwidth=1)
+frame_range_frame.columnconfigure(0, weight=1)
 action_frame = Frame(main, borderwidth=1)
 
 
@@ -348,6 +359,14 @@ def clear_batch_selection():
     batch_selection_listbox.delete(0, 'end')
 
 
+def frame_range_checkbox_command():
+    for entry_widget in (frame_start_entry, frame_end_entry, frame_jump_entry):
+        if entry_widget['state'] == 'normal':
+            entry_widget.config(state='disabled')
+        else:
+            entry_widget.config(state='normal')
+
+
 add_button = Button(
     action_frame,
     text='Add',
@@ -391,6 +410,18 @@ output_dialog_button = Button(
     entry_frame,
     text='Output Directory',
     command=partial(set_entry, entry=output_entry, value=askdirectory))
+frame_range_variable = IntVar(main)
+frame_range_checkbox = Checkbutton(
+    frame_range_frame, text='Frame Range', variable=frame_range_variable,
+    command=frame_range_checkbox_command)
+frame_start_entry = Entry(frame_range_frame)
+frame_end_entry = Entry(frame_range_frame)
+frame_jump_entry = Entry(frame_range_frame)
+set_entry(entry=frame_start_entry, value='1')
+set_entry(entry=frame_end_entry, value='100')
+set_entry(entry=frame_jump_entry, value='1')
+for frwidget in (frame_start_entry, frame_end_entry, frame_jump_entry):
+    frwidget.config(state='disabled')
 batch_selection_listbox = Listbox(batch_selection_frame, exportselection=False)
 clear_batch_selection_button = Button(
     batch_selection_frame,
@@ -419,6 +450,11 @@ input_colorspace_choice.grid(row=0, column=1, sticky='news')
 input_dialog_button.grid(row=0, column=2, sticky='news')
 output_entry.grid(row=1, column=0, columnspan=2, sticky='news')
 output_dialog_button.grid(row=1, column=2, sticky='news')
+frame_range_frame.pack(fill='both', expand=True)
+frame_range_checkbox.grid(row=0, column=0, sticky='news')
+frame_start_entry.grid(row=0, column=1, sticky='news')
+frame_end_entry.grid(row=0, column=2, sticky='news')
+frame_jump_entry.grid(row=0, column=3, sticky='news')
 add_button.pack(fill='both')
 convert_button.pack(fill='both')
 batch_selection_frame.pack(fill='both', expand=True)
