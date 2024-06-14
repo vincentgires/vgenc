@@ -1,9 +1,10 @@
-# TODO: stereo
+# TODO: stereo anaglyph movie
 # TODO: add ocio looks
 # TODO: read ocio config for listing colorspaces, view transforms and looks
 # TODO: image preview
 
 import os
+import re
 from tkinter import (
     Tk, Listbox, Entry, Button, Frame, LabelFrame, StringVar, IntVar,
     OptionMenu, Checkbutton)
@@ -146,115 +147,131 @@ _oiiotool_bit_depths = {
 batch_selection: list[dict] = []
 
 
+def find_views_paths(path: str) -> list[tuple[int, int]] | None:
+    # Find %v{name1|name2|etc}
+    pattern = r'%v\{([^}]+)\}'
+    if matches := re.findall(pattern, path):
+        views = set([x for match in matches for x in match.split('|')])
+        return [(view, re.sub(pattern, view, path)) for view in views]
+
+
 def convert(
         exec_image_convert: Callable = batch_convert_image,
         exec_movie_convert: Callable = convert_movie):
     input_path = os.path.expandvars(input_entry.get())
     output_path = os.path.expandvars(output_entry.get())
-    frame_info = get_frame_info(input_path)
-    if frame_info is None:
-        return
-    if frame_range_variable.get():
-        input_range = (
-            int(frame_start_entry.get()), int(frame_end_entry.get()))
-        frame_jump = int(frame_jump_entry.get())
-    else:
-        input_range = find_image_sequence_range(
-            path=input_path,
-            digits=frame_info['digits'],
-            prefix=frame_info['start'],
-            suffix=frame_info['end'])
-        if input_range is None:
-            return
-        frame_jump = 1
 
-    first_frame_path = (
-        f"{frame_info['start']}"
-        f"{input_range[0]:0{frame_info['digits']}}"
-        f"{frame_info['end']}")
-    if not os.path.exists(first_frame_path):
-        raise IOError(f'Cannot find file: {first_frame_path}')
-    input_x, input_y = get_image_size(first_frame_path)
+    # Multiview: extend input path with views
+    view_paths = find_views_paths(input_path)
+    if view_paths is None:
+        view_paths = [(None, input_path)]
 
-    for data in batch_selection:
+    for view, input_path in view_paths:
+        frame_info = get_frame_info(input_path)
+        if frame_info is None:
+            continue
+        if frame_range_variable.get():
+            input_range = (
+                int(frame_start_entry.get()), int(frame_end_entry.get()))
+            frame_jump = int(frame_jump_entry.get())
+        else:
+            input_range = find_image_sequence_range(
+                path=input_path,
+                digits=frame_info['digits'],
+                prefix=frame_info['start'],
+                suffix=frame_info['end'])
+            if input_range is None:
+                continue
+            frame_jump = 1
 
-        resolution = data['resolution']
-        resolution_value = resolutions.get(resolution)
-        file_format = data['file_format']
-        file_format_value = file_formats.get(file_format)
-        color_depth = data['color_depth']
-        color_depth_value = color_depths.get(color_depth)
-        view_transform = data['view_transform']
-        view_transform_value = view_transforms.get(view_transform)
-        movie_container = data['movie_container']
-        movie_container_value = movie_containers.get(movie_container)
-        movie_codec = data['movie_codec']
-        movie_codec_value = movie_codecs.get(movie_codec)
+        first_frame_path = (
+            f"{frame_info['start']}"
+            f"{input_range[0]:0{frame_info['digits']}}"
+            f"{frame_info['end']}")
+        if not os.path.exists(first_frame_path):
+            raise IOError(f'Cannot find file: {first_frame_path}')
+        input_x, input_y = get_image_size(first_frame_path)
 
-        # Resolution
-        if cut := resolution_value.get('cut'):
-            cut_x, cut_y = cut
-            cut_offset = (
-                int((input_x - cut_x) / 2),
-                int((input_y - cut_y) / 2))
-            cut = ((cut_x, cut_y), cut_offset)
-        fit = resolution_value.get('fit')
+        for data in batch_selection:
+            resolution = data['resolution']
+            resolution_value = resolutions.get(resolution)
+            file_format = data['file_format']
+            file_format_value = file_formats.get(file_format)
+            color_depth = data['color_depth']
+            color_depth_value = color_depths.get(color_depth)
+            view_transform = data['view_transform']
+            view_transform_value = view_transforms.get(view_transform)
+            movie_container = data['movie_container']
+            movie_container_value = movie_containers.get(movie_container)
+            movie_codec = data['movie_codec']
+            movie_codec_value = movie_codecs.get(movie_codec)
 
-        # File format
-        file_ext = file_format_value['ext']
-        file_compression = file_format_value.get('compression')
+            # Resolution
+            if cut := resolution_value.get('cut'):
+                cut_x, cut_y = cut
+                cut_offset = (
+                    int((input_x - cut_x) / 2),
+                    int((input_y - cut_y) / 2))
+                cut = ((cut_x, cut_y), cut_offset)
+            fit = resolution_value.get('fit')
 
-        # Color depth
-        oiio_color_depth = _oiiotool_bit_depths[color_depth_value]
+            # File format
+            file_ext = file_format_value['ext']
+            file_compression = file_format_value.get('compression')
 
-        # View transform
-        expanded_output_dir = output_path.format(
-            resolution=resolution,
-            file_format=file_format,
-            color_depth=color_depth,
-            view_transform=view_transform)
-        output_image = os.path.join(
-            expanded_output_dir,
-            f"image.{'#' * frame_info['digits']}{file_ext}")
+            # Color depth
+            oiio_color_depth = _oiiotool_bit_depths[color_depth_value]
 
-        exec_image_convert(
-            input_path=input_path,
-            output_path=output_image,
-            frame_range=input_range,
-            frame_jump=frame_jump,
-            cut=cut,
-            fit=fit,
-            compression=file_compression,
-            data_format=oiio_color_depth,
-            color_depth=color_depth_value[0],
-            input_colorspace=input_colorspace_variable.get(),
-            display_view=view_transform_value)
+            # View transform
+            expanded_output_dir = output_path.format(
+                resolution=resolution,
+                file_format=file_format,
+                color_depth=color_depth,
+                view_transform=view_transform)
+            file_name = f"image.{'#' * frame_info['digits']}{file_ext}"
+            output_image = os.path.join(expanded_output_dir, file_name)
+            if view is not None:
+                output_image = os.path.join(
+                    expanded_output_dir, view, file_name)
 
-        # Movie
-        if all(x is not None for x in (movie_container, movie_codec)):
-            movie_ext = movie_container_value['ext']
-            movie_quality = movie_codec_value.get('quality')
-            movie_crf = movie_codec_value.get('crf')
-            movie_bitrate = movie_codec_value.get('bitrate')
-            movie_encoder_codec = movie_codec_value.get('codec')
-            movie_encoder_profile = movie_codec_value.get('profile')
-            movie_encoder_pixfmt = movie_codec_value.get('pixel_format')
+            exec_image_convert(
+                input_path=input_path,
+                output_path=output_image,
+                frame_range=input_range,
+                frame_jump=frame_jump,
+                cut=cut,
+                fit=fit,
+                compression=file_compression,
+                data_format=oiio_color_depth,
+                color_depth=color_depth_value[0],
+                input_colorspace=input_colorspace_variable.get(),
+                display_view=view_transform_value)
 
-            # Movie encoding
-            printf_input_path = output_image.replace(
-                '#' * frame_info['digits'], f"%0{frame_info['digits']}d")
-            output_movie = os.path.join(
-                expanded_output_dir, f'movie.{movie_codec}{movie_ext}')
-            exec_movie_convert(
-                input_path=printf_input_path,
-                output_path=output_movie,
-                start_number=input_range[0],
-                video_codec=movie_encoder_codec,
-                video_profile=movie_encoder_profile,
-                video_quality=movie_quality,
-                constrained_quality=movie_crf,
-                video_bitrate=movie_bitrate,
-                pixel_format=movie_encoder_pixfmt)
+            # Movie
+            if all(x is not None for x in (movie_container, movie_codec)):
+                movie_ext = movie_container_value['ext']
+                movie_quality = movie_codec_value.get('quality')
+                movie_crf = movie_codec_value.get('crf')
+                movie_bitrate = movie_codec_value.get('bitrate')
+                movie_encoder_codec = movie_codec_value.get('codec')
+                movie_encoder_profile = movie_codec_value.get('profile')
+                movie_encoder_pixfmt = movie_codec_value.get('pixel_format')
+
+                # Movie encoding
+                printf_input_path = output_image.replace(
+                    '#' * frame_info['digits'], f"%0{frame_info['digits']}d")
+                output_movie = os.path.join(
+                    expanded_output_dir, f'movie.{movie_codec}{movie_ext}')
+                exec_movie_convert(
+                    input_path=printf_input_path,
+                    output_path=output_movie,
+                    start_number=input_range[0],
+                    video_codec=movie_encoder_codec,
+                    video_profile=movie_encoder_profile,
+                    video_quality=movie_quality,
+                    constrained_quality=movie_crf,
+                    video_bitrate=movie_bitrate,
+                    pixel_format=movie_encoder_pixfmt)
 
     clear_batch_selection()
 
