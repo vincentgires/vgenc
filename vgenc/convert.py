@@ -2,6 +2,7 @@ import os
 import tempfile
 import shutil
 from subprocess import run
+from typing import Literal
 from .files import (
     MissingFramesLiteral, get_frame_info, generate_missing_frames)
 from .probe import get_image_size
@@ -207,6 +208,51 @@ def _replace_ext(file_path: str, ext: str) -> str:
     return path + ext
 
 
+def convert_tx(
+        input_path: str,
+        output_path: str | None = None,
+        color_convert: tuple[str, str] | None = None,
+        file_format: Literal['openexr', 'tiff'] | None = None,
+        metadata: dict[str, str | int] | None = None,
+        overwrite=False) -> str | None:
+    """Convert texture to TX using maketx
+
+    Args:
+        input_path: source image path
+        output_path: output image path (or None and .tx will be created in the
+          same directory)
+        color_convert: input / target colorspace (or None will try to guess it
+          from file extension)
+        file_format: file format name (openexr or tiff)
+        metadata: add metadata
+        overwrite: overwrite output file
+
+    Returns:
+        The .tx path if it already exists, or the generated one
+    """
+
+    if not os.path.exists(input_path):
+        return
+    _, ext = os.path.splitext(input_path)
+    if ext == '.tx':  # Don't convert tx
+        return input_path
+    tx_path = output_path or _replace_ext(input_path, ext='.tx')
+    if os.path.exists(tx_path) and not overwrite:  # Don't overwrite
+        return tx_path
+    command = ['maketx', input_path]
+    if color_convert is not None:
+        command.extend(['--colorconvert', *color_convert])
+    if file_format is not None:
+        command.extend(['--format', file_format])
+    if metadata is not None:
+        for md, mdv in metadata.items():
+            attrib_arg = '--sattrib' if isinstance(mdv, str) else '--attrib'
+            command.extend([attrib_arg, md, mdv])
+    command.extend(['-o', tx_path])
+    run(command)
+    return tx_path
+
+
 def convert_movie(
         input_path: str | list[str],
         output_path: str,
@@ -383,7 +429,7 @@ def convert_movie(
         shutil.rmtree(tmp_dir)
 
 
-def convert_to_gif(
+def convert_gif(
         input_path: str | list[str],
         output_path: str,
         fps: int = 15,
