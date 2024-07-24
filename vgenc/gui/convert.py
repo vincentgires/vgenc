@@ -24,12 +24,17 @@ input_colorspaces = [
 resolutions = {
     '2k Full': {
         'cut': (2048, 1080)},
+    '2k Univisium': {
+        'cut': (2048, 1024)},
     '2k Scope': {
         'cut': (2048, 858)},
     '2k Flat': {
         'cut': (1998, 1080)},
     'HD': {
         'cut': (1920, 1080)},
+    'HD Univisium Letterbox': {
+        'cut': (2048, 1024),
+        'fit': (1920, 1080)},
     'HD Scope Letterbox': {
         'cut': (2048, 858),
         'fit': (1920, 1080)},
@@ -39,6 +44,9 @@ resolutions = {
     'HD Flat Letterbox': {
         'cut': (1998, 1080),
         'fit': (1920, 1080)},
+    'DVD PAL Univisium Letterbox': {
+        'cut': (2048, 1024),
+        'fit': (720, 576)},
     'DVD PAL Scope Letterbox': {
         'cut': (2048, 858),
         'fit': (720, 576)}}
