@@ -300,6 +300,15 @@ def get_listbox_selection_values(listbox: Listbox, multiple=True):
             return listbox.get(curselection[0])
 
 
+def set_listbox(listbox: Listbox, value: str | None):
+    if value is None:
+        return
+    listbox.select_clear(0, 'end')
+    all_values = listbox.get(0, 'end')
+    index = all_values.index(value)
+    listbox.selection_set(index)
+
+
 def set_entry(entry: Entry, value: str | Callable):
     if isinstance(value, Callable):
         value = value()
@@ -361,24 +370,62 @@ def on_rightclick(event):
     set_combinaison_validity()
 
 
+def _update_file_formats_listbox():
+    selected_file_format = get_listbox_selection_values(
+        file_formats_listbox, multiple=False)
+    if selected_file_format is None:
+        return
+    available_color_depths = file_formats[selected_file_format].get(
+        'color_depths', color_depths.keys())
+    fill_listbox(color_depths_listbox, available_color_depths, clear=True)
+
+
+def _update_movie_containers_listbox():
+    selected_movie_container = get_listbox_selection_values(
+        movie_containers_listbox, multiple=False)
+    if selected_movie_container is None:
+        return
+    available_movie_codecs = movie_containers[
+        selected_movie_container].get('codecs', movie_codecs.keys())
+    fill_listbox(movie_codecs_listbox, available_movie_codecs, clear=True)
+
+
 def on_update_selection(event):
     # Adapt color depths from file format selected
     if event.widget is file_formats_listbox:
-        selected_file_format = get_listbox_selection_values(
-            file_formats_listbox, multiple=False)
-        available_color_depths = file_formats[selected_file_format].get(
-            'color_depths', color_depths.keys())
-        fill_listbox(color_depths_listbox, available_color_depths, clear=True)
+        _update_file_formats_listbox()
 
     # Adapt movie codecs from movie container selected
     if event.widget is movie_containers_listbox:
-        selected_movie_container = get_listbox_selection_values(
-            movie_containers_listbox, multiple=False)
-        available_movie_codecs = movie_containers[
-            selected_movie_container].get('codecs', movie_codecs.keys())
-        fill_listbox(movie_codecs_listbox, available_movie_codecs, clear=True)
+        _update_movie_containers_listbox()
 
     set_combinaison_validity()
+
+
+def on_batch_selection_doubleclick(event):
+    if curselection_indexes := batch_selection_listbox.curselection():
+        curindex = curselection_indexes[0]
+        selection_data = batch_selection[curindex]
+        set_listbox(
+            resolutions_listbox,
+            selection_data['resolution'])
+        set_listbox(
+            file_formats_listbox,
+            selection_data['file_format'])
+        _update_file_formats_listbox()
+        set_listbox(
+            color_depths_listbox,
+            selection_data['color_depth'])
+        set_listbox(
+            view_transforms_listbox,
+            selection_data['view_transform'])
+        set_listbox(
+            movie_containers_listbox,
+            selection_data['movie_container'])
+        _update_movie_containers_listbox()
+        set_listbox(
+            movie_codecs_listbox,
+            selection_data['movie_codec'])
 
 
 def add_config_to_batch_selection():
@@ -454,6 +501,8 @@ set_entry(entry=frame_jump_entry, value='1')
 for frwidget in (frame_start_entry, frame_end_entry, frame_jump_entry):
     frwidget.config(state='disabled')
 batch_selection_listbox = Listbox(batch_selection_frame, exportselection=False)
+batch_selection_listbox.bind(
+    '<Double-Button-1>', on_batch_selection_doubleclick)
 add_to_batch_selection_button = Button(
     batch_selection_frame,
     text='Add',
