@@ -364,13 +364,12 @@ def set_combinaison_validity():
 
 
 def on_rightclick(event):
-    # Unselect
-    event.widget.selection_clear(0, 'end')
-
+    event.widget.selection_clear(0, 'end')  # Unselect
     set_combinaison_validity()
 
 
 def _update_file_formats_listbox():
+    """Adapt color depths from file format selected"""
     selected_file_format = get_listbox_selection_values(
         file_formats_listbox, multiple=False)
     if selected_file_format is None:
@@ -381,6 +380,7 @@ def _update_file_formats_listbox():
 
 
 def _update_movie_containers_listbox():
+    """Adapt movie codecs from movie container selected"""
     selected_movie_container = get_listbox_selection_values(
         movie_containers_listbox, multiple=False)
     if selected_movie_container is None:
@@ -391,14 +391,10 @@ def _update_movie_containers_listbox():
 
 
 def on_update_selection(event):
-    # Adapt color depths from file format selected
     if event.widget is file_formats_listbox:
         _update_file_formats_listbox()
-
-    # Adapt movie codecs from movie container selected
     if event.widget is movie_containers_listbox:
         _update_movie_containers_listbox()
-
     set_combinaison_validity()
 
 
@@ -426,6 +422,7 @@ def on_batch_selection_doubleclick(event):
         set_listbox(
             movie_codecs_listbox,
             selection_data['movie_codec'])
+        set_combinaison_validity()
 
 
 def add_config_to_batch_selection():
