@@ -10,11 +10,19 @@ from tkinter import (
     OptionMenu, Checkbutton)
 from tkinter.filedialog import askopenfilename, askdirectory
 from functools import partial
-from typing import Callable, Iterable
+from typing import Callable, Iterable, TypedDict
 from ..convert import convert_movie
 from ..files import get_frame_info, find_image_sequence_range
 from ..probe import get_image_size
 from ..batch import batch_convert_image
+
+SelectionDataType = TypedDict('Data', {
+    'resolution': str | None,
+    'file_format': str | None,
+    'color_depth': str | None,
+    'view_transform': str | None,
+    'movie_container': str | None,
+    'movie_codec': str | None})
 
 input_colorspaces = [
     'ACES2065-1',
@@ -26,6 +34,9 @@ resolutions = {
         'cut': (2048, 1080)},
     '2k Univisium': {
         'cut': (2048, 1024)},
+    '2k Full Univisium Letterbox': {
+        'cut': (2048, 1024),
+        'fit': (2048, 1080)},
     '2k Scope': {
         'cut': (2048, 858)},
     '2k Flat': {
@@ -301,9 +312,9 @@ def get_listbox_selection_values(listbox: Listbox, multiple=True):
 
 
 def set_listbox(listbox: Listbox, value: str | None):
+    listbox.select_clear(0, 'end')
     if value is None:
         return
-    listbox.select_clear(0, 'end')
     all_values = listbox.get(0, 'end')
     index = all_values.index(value)
     listbox.selection_set(index)
@@ -327,6 +338,18 @@ entry_frame.columnconfigure(0, weight=1)
 frame_range_frame = Frame(main, borderwidth=1)
 frame_range_frame.columnconfigure(0, weight=1)
 action_frame = Frame(main, borderwidth=1)
+
+
+def set_selection(data: SelectionDataType):
+    set_listbox(resolutions_listbox, data.get('resolution'))
+    set_listbox(file_formats_listbox, data.get('file_format'))
+    _update_file_formats_listbox()
+    set_listbox(color_depths_listbox, data.get('color_depth'))
+    set_listbox(view_transforms_listbox, data.get('view_transform'))
+    set_listbox(movie_containers_listbox, data.get('movie_container'))
+    _update_movie_containers_listbox()
+    set_listbox(movie_codecs_listbox, data.get('movie_codec'))
+    set_combinaison_validity()
 
 
 def get_current_selection():
