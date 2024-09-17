@@ -7,7 +7,7 @@ import os
 import re
 from tkinter import (
     Tk, Listbox, Entry, Button, Frame, LabelFrame, StringVar, IntVar,
-    OptionMenu, Checkbutton)
+    OptionMenu, Checkbutton, PhotoImage)
 from tkinter.filedialog import askopenfilename, askdirectory
 from functools import partial
 from typing import Callable, Iterable, TypedDict
@@ -327,12 +327,40 @@ def set_entry(entry: Entry, value: str | Callable):
     entry.insert(0, value)
 
 
+def create_photoimage(
+        name: str,
+        subsample: tuple[int, int] | None = None,
+        zoom: tuple[int, int] | None = None) -> PhotoImage:
+    "Find and create PhotoImage from ICONS_PATH"
+    if icons_path := os.environ.get('ICONS_PATH'):
+        for path in icons_path.split(os.pathsep):
+            icon_path = os.path.join(path, name)
+            if os.path.exists(icon_path):
+                photo_image = PhotoImage(file=icon_path)
+                if subsample is not None:
+                    photo_image = photo_image.subsample(*subsample)
+                if zoom is not None:
+                    photo_image = photo_image.subsample(*zoom)
+                return photo_image
+
+
 main = Tk()
 main.title('Convert')
 
-format_selecion_frame = LabelFrame(main, borderwidth=1, text='Image')
-movie_format_selecion_frame = LabelFrame(main, borderwidth=1, text='Movie')
+images_data: dict[str, str] = {
+    'add': create_photoimage(name='add.png', subsample=(2, 2)),
+    'clear': create_photoimage(name='clear.png', subsample=(2, 2)),
+    'options': create_photoimage(name='options.png', subsample=(2, 2)),
+}
+
+selection_frame = Frame(main, borderwidth=1)
+selection_frame_toolbar_frame = Frame(selection_frame, borderwidth=1)
+format_selecion_frame = LabelFrame(
+    selection_frame, borderwidth=1, text='Image')
+movie_format_selecion_frame = LabelFrame(
+    selection_frame, borderwidth=1, text='Movie')
 batch_selection_frame = LabelFrame(main, borderwidth=1, text='Batch Selection')
+batch_selection_toolbar_frame = Frame(batch_selection_frame, borderwidth=1)
 entry_frame = LabelFrame(main, borderwidth=1, text='IO')
 entry_frame.columnconfigure(0, weight=1)
 frame_range_frame = Frame(main, borderwidth=1)
@@ -524,14 +552,16 @@ batch_selection_listbox = Listbox(batch_selection_frame, exportselection=False)
 batch_selection_listbox.bind(
     '<Double-Button-1>', on_batch_selection_doubleclick)
 add_to_batch_selection_button = Button(
-    batch_selection_frame,
+    batch_selection_toolbar_frame,
     text='Add',
-    command=add_config_to_batch_selection)
+    command=add_config_to_batch_selection,
+    image=images_data.get('add'))
 add_to_batch_selection_button.config(state='disabled')
 clear_batch_selection_button = Button(
-    batch_selection_frame,
+    batch_selection_toolbar_frame,
     text='Clear',
-    command=partial(clear_batch_selection))
+    command=partial(clear_batch_selection),
+    image=images_data.get('clear'))
 convert_button = Button(
     action_frame,
     text='Convert',
@@ -545,9 +575,12 @@ fill_listbox(view_transforms_listbox, view_transforms)
 fill_listbox(movie_containers_listbox, movie_containers)
 fill_listbox(movie_codecs_listbox, movie_codecs)
 
+selection_frame.pack(fill='both', expand=True)
+selection_frame_toolbar_frame.pack(side='right', fill='both')
 format_selecion_frame.pack(fill='both', expand=True)
 movie_format_selecion_frame.pack(fill='both', expand=True)
 batch_selection_frame.pack(fill='both', expand=True)
+batch_selection_toolbar_frame.pack(side='right', fill='both')
 batch_selection_listbox.pack(fill='both', expand=True)
 add_to_batch_selection_button.pack(fill='both')
 clear_batch_selection_button.pack(fill='both')
