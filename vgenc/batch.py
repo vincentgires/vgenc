@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import argparse
 from .files import get_frame_info
 from .convert import convert_image
@@ -81,6 +82,16 @@ def batch_convert_image(
             frame_jump=frame_jump)
 
 
+def _convert_os_path(path):
+    if sys.platform.startswith('linux'):
+        if path.startswith(r'\\'):
+            path = '/' + path.replace('\\', '/')[2:]
+    elif sys.platform.startswith('win'):
+        if path.startswith('/') and not path.startswith('//'):
+            path = r'\\' + os.path.normpath(path)[1:]
+    return path
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -120,8 +131,8 @@ if __name__ == '__main__':
             else:
                 cut = None
             batch_convert_image(
-                input_path=args.input_path,
-                output_path=args.output_path,
+                input_path=_convert_os_path(args.input_path),
+                output_path=_convert_os_path(args.output_path),
                 frame_range=(args.frame_start, args.frame_end),
                 frame_jump=args.frame_jump,
                 cut=None,
