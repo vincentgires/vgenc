@@ -211,7 +211,14 @@ def convert(
             raise IOError(f'Cannot find file: {first_frame_path}')
         input_x, input_y = get_image_size(first_frame_path)
 
-        for data in batch_selection:
+        # Take the selection batch list if not empty, or take the listboxes
+        # selection
+        if batch_selection:
+            selection = batch_selection.copy()
+        else:
+            selection = [get_current_selection()]
+
+        for data in selection:
             resolution = data['resolution']
             resolution_value = resolutions.get(resolution)
             file_format = data['file_format']
@@ -408,10 +415,16 @@ def set_combinaison_validity():
     movie_data_values = [
         v for k, v in data_selection.items() if k in movie_data_enum]
     m_ok = all(movie_data_values) or all(x is None for x in movie_data_values)
-    if all(image_data_values) and m_ok:
-        add_to_batch_selection_button.config(state='normal')
-    else:
-        add_to_batch_selection_button.config(state='disabled')
+    widgets = (add_to_batch_selection_button, convert_button)
+    for widget in widgets:
+        if all(image_data_values) and m_ok:
+            state = 'normal'
+        else:
+            state = 'disabled'
+        if widget is convert_button:
+            if batch_selection:
+                state = 'normal'
+        widget.config(state=state)
 
 
 def on_rightclick(event):
@@ -488,6 +501,7 @@ def add_config_to_batch_selection():
 def clear_batch_selection():
     batch_selection.clear()
     batch_selection_listbox.delete(0, 'end')
+    set_combinaison_validity()
 
 
 def frame_range_checkbox_command():
