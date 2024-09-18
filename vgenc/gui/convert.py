@@ -21,6 +21,7 @@ SelectionDataType = TypedDict('Data', {
     'file_format': str | None,
     'color_depth': str | None,
     'view_transform': str | None,
+    'audio_codec': str | None,
     'movie_container': str | None,
     'movie_codec': str | None})
 
@@ -154,6 +155,17 @@ movie_codecs = {
     'Theora': {
         'codec': 'theora',
         'quality': 7}}
+audio_codecs = {
+    'Copy': {
+        'codec': 'copy'},
+    'FLAC': {
+        'codec': 'flac'},
+    'OPUS': {
+        'codec': 'libopus'},
+    'Vorbis': {
+        'codec': 'libvorbis'},
+    'MP3': {
+        'codec': 'libmp3lame'}}
 
 _oiiotool_bit_depths = {
     (8,): 'uint8',
@@ -179,6 +191,7 @@ def convert(
         exec_movie_convert: Callable = convert_movie):
     input_path = os.path.expandvars(input_entry.get())
     output_path = os.path.expandvars(output_entry.get())
+    audio_path = os.path.expandvars(audio_entry.get())
 
     # Multiview: extend input path with views
     view_paths = find_views_paths(input_path)
@@ -287,9 +300,19 @@ def convert(
                 printf_input_path = output_image.replace(
                     '#' * frame_info['digits'], f"%0{frame_info['digits']}d")
                 output_movie = os.path.join(
-                    expanded_output_dir, f'movie.{movie_codec}{movie_ext}')
+                    expanded_output_dir, f'movie{movie_ext}')
+
+                # Set audio
+                audio_codec = None
+                input_ = printf_input_path
+                if audio_path and os.path.exists(audio_path):
+                    input_ = [printf_input_path, audio_path]
+                    if acodec := data.get('audio_codec'):
+                        audio_codec_value = audio_codecs.get(acodec)
+                        audio_codec = audio_codec_value.get('codec')
+
                 exec_movie_convert(
-                    input_path=printf_input_path,
+                    input_path=input_,
                     output_path=output_movie,
                     start_number=input_range[0],
                     video_codec=movie_encoder_codec,
@@ -297,7 +320,8 @@ def convert(
                     video_quality=movie_quality,
                     constrained_quality=movie_crf,
                     video_bitrate=movie_bitrate,
-                    pixel_format=movie_encoder_pixfmt)
+                    pixel_format=movie_encoder_pixfmt,
+                    audio_codec=audio_codec)
 
     clear_batch_selection()
 
@@ -381,6 +405,7 @@ def set_selection(data: SelectionDataType):
     _update_file_formats_listbox()
     set_listbox(color_depths_listbox, data.get('color_depth'))
     set_listbox(view_transforms_listbox, data.get('view_transform'))
+    set_listbox(audio_codecs_listbox, data.get('audio_codec'))
     set_listbox(movie_containers_listbox, data.get('movie_container'))
     _update_movie_containers_listbox()
     set_listbox(movie_codecs_listbox, data.get('movie_codec'))
@@ -400,7 +425,9 @@ def get_current_selection():
         'movie_container': get_listbox_selection_values(
             movie_containers_listbox, multiple=False),
         'movie_codec': get_listbox_selection_values(
-            movie_codecs_listbox, multiple=False)}
+            movie_codecs_listbox, multiple=False),
+        'audio_codec': get_listbox_selection_values(
+            audio_codecs_listbox, multiple=False)}
     return data
 
 
@@ -486,6 +513,9 @@ def on_batch_selection_doubleclick(event):
         set_listbox(
             movie_codecs_listbox,
             selection_data['movie_codec'])
+        set_listbox(
+            audio_codecs_listbox,
+            selection_data['audio_codec'])
         set_combinaison_validity()
 
 
@@ -536,11 +566,19 @@ movie_codecs_listbox = Listbox(
     movie_format_selecion_frame, exportselection=False, selectmode='browse')
 movie_codecs_listbox.bind('<<ListboxSelect>>', on_update_selection)
 movie_codecs_listbox.bind('<Button-3>', on_rightclick)
+audio_codecs_listbox = Listbox(
+    movie_format_selecion_frame, exportselection=False, selectmode='browse')
+audio_codecs_listbox.bind('<Button-3>', on_rightclick)
 input_entry = Entry(entry_frame)
 input_colorspace_variable = StringVar(main)
 input_colorspace_variable.set(input_colorspaces[0])
 input_colorspace_choice = OptionMenu(
     entry_frame, input_colorspace_variable, *input_colorspaces)
+audio_entry = Entry(entry_frame)
+audio_dialog_button = Button(
+    entry_frame,
+    text='Audio Input',
+    command=partial(set_entry, entry=audio_entry, value=askopenfilename))
 output_entry = Entry(entry_frame)
 input_dialog_button = Button(
     entry_frame,
@@ -588,6 +626,7 @@ fill_listbox(color_depths_listbox, color_depths)
 fill_listbox(view_transforms_listbox, view_transforms)
 fill_listbox(movie_containers_listbox, movie_containers)
 fill_listbox(movie_codecs_listbox, movie_codecs)
+fill_listbox(audio_codecs_listbox, audio_codecs)
 
 selection_frame.pack(fill='both', expand=True)
 selection_frame_toolbar_frame.pack(side='right', fill='both')
@@ -611,11 +650,14 @@ color_depths_listbox.pack(side='left', fill='both', expand=True)
 view_transforms_listbox.pack(side='left', fill='both', expand=True)
 movie_containers_listbox.pack(side='left', fill='both', expand=True)
 movie_codecs_listbox.pack(side='left', fill='both', expand=True)
+audio_codecs_listbox.pack(side='left', fill='both', expand=True)
 input_entry.grid(row=0, column=0, sticky='news')
 input_colorspace_choice.grid(row=0, column=1, sticky='news')
 input_dialog_button.grid(row=0, column=2, sticky='news')
-output_entry.grid(row=1, column=0, columnspan=2, sticky='news')
-output_dialog_button.grid(row=1, column=2, sticky='news')
+audio_entry.grid(row=1, column=0, columnspan=2, sticky='news')
+audio_dialog_button.grid(row=1, column=2, sticky='news')
+output_entry.grid(row=2, column=0, columnspan=2, sticky='news')
+output_dialog_button.grid(row=2, column=2, sticky='news')
 convert_button.pack(fill='both')
 
 if __name__ == '__main__':
