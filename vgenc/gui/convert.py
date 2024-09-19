@@ -325,6 +325,37 @@ def convert(
 
     clear_batch_selection()
 
+# <-- GUI -->
+
+theme = {
+    'background_color': '#2E2E2E',
+    'foreground_color': '#FFFFFF',
+    # 'disabled_background_color': '#4A4A4A',
+    # 'disabled_foreground_color': '#B0B0B0',
+    'border_width': 1}
+
+
+def apply_theme(widget):
+    if isinstance(widget, (Tk, Frame)):
+        widget.configure(bg=theme['background_color'])
+    else:
+        widget.configure(
+            bg=theme['background_color'],
+            fg=theme['foreground_color'],
+            borderwidth=theme['border_width'])
+        #try:
+        #    if widget.cget('state') == 'disabled':
+        #        widget.configure(
+        #            bg=theme['disabled_background_color'],
+        #            fg=theme['disabled_foreground_color'])
+        #except:
+        #    ...
+    if isinstance(widget, Entry):
+        # Cursor
+        widget.configure(insertbackground=theme['foreground_color'])
+    for child in widget.winfo_children():
+        apply_theme(child)
+
 
 def fill_listbox(listbox: Listbox, items: Iterable[str], clear: bool = False):
     if clear:
@@ -384,19 +415,17 @@ images_data: dict[str, str] = {
     'options': create_photoimage(name='options.png', subsample=(2, 2)),
 }
 
-selection_frame = Frame(main, borderwidth=1)
-selection_frame_toolbar_frame = Frame(selection_frame, borderwidth=1)
-format_selecion_frame = LabelFrame(
-    selection_frame, borderwidth=1, text='Image')
-movie_format_selecion_frame = LabelFrame(
-    selection_frame, borderwidth=1, text='Movie')
-batch_selection_frame = LabelFrame(main, borderwidth=1, text='Batch Selection')
-batch_selection_toolbar_frame = Frame(batch_selection_frame, borderwidth=1)
-entry_frame = LabelFrame(main, borderwidth=1, text='IO')
+selection_frame = Frame(main)
+selection_frame_toolbar_frame = Frame(selection_frame)
+format_selecion_frame = LabelFrame(selection_frame, text='Image')
+movie_format_selecion_frame = LabelFrame(selection_frame, text='Movie')
+batch_selection_frame = LabelFrame(main, text='Batch Selection')
+batch_selection_toolbar_frame = Frame(batch_selection_frame)
+entry_frame = LabelFrame(main, text='IO')
 entry_frame.columnconfigure(0, weight=1)
-frame_range_frame = Frame(main, borderwidth=1)
+frame_range_frame = Frame(main)
 frame_range_frame.columnconfigure(0, weight=1)
-action_frame = Frame(main, borderwidth=1)
+action_frame = Frame(main)
 
 
 def set_selection(data: SelectionDataType):
@@ -661,6 +690,7 @@ output_dialog_button.grid(row=2, column=2, sticky='news')
 convert_button.pack(fill='both')
 
 if __name__ == '__main__':
+    # apply_theme(main)
     set_entry(entry=input_entry, value='$HOME/input/image.####.exr')
     set_entry(entry=output_entry, value='$HOME/output/{resolution}/{file_format}/{color_depth}/{view_transform}')
     main.mainloop()
