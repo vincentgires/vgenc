@@ -480,6 +480,8 @@ def set_combinaison_validity():
         if widget is convert_button:
             if batch_selection:
                 state = 'normal'
+            if not all(x for x in (input_entry.get(), output_entry.get())):
+                state = 'disabled'
         widget.config(state=state)
 
 
