@@ -42,6 +42,9 @@ resolutions = {
         'cut': (2048, 858)},
     '2k Flat': {
         'cut': (1998, 1080)},
+    '2k Flat Univisium Letterbox': {
+        'cut': (2048, 1024),
+        'fit': (1998, 1080)},
     'HD': {
         'cut': (1920, 1080)},
     'HD Univisium Letterbox': {
