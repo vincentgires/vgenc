@@ -303,7 +303,7 @@ def convert(
                 printf_input_path = output_image.replace(
                     '#' * frame_info['digits'], f"%0{frame_info['digits']}d")
                 output_movie = os.path.join(
-                    expanded_output_dir, f'movie{movie_ext}')
+                    expanded_output_dir, f'movie.{view}{movie_ext}')
 
                 # Set audio
                 audio_codec = None
