@@ -36,16 +36,16 @@ def find_image_sequence_range(
         path: str,
         digits: int,
         prefix: str = '',
-        suffix: str = ''
-        ) -> tuple[int, int]:
-    dirname, basename = os.path.split(path)
+        suffix: str = '',
+        filter_files: bool = False) -> tuple[int, int]:
+    dirname = os.path.dirname(path)
     files = sorted(os.listdir(dirname))
-    files = [
-        os.path.join(dirname, f) for f in files
-        if os.path.isfile(os.path.join(dirname, f))]
+    if filter_files:
+        files = [f for f in files if os.path.isfile(os.path.join(dirname, f))]
     search_pattern = rf'{prefix}(\d{{{digits}}}){suffix}'
+    files_ = files[0], files[-1]
     frames = [
-        int(m.group(1)) for m in [re.search(search_pattern, f) for f in files]
+        int(m.group(1)) for m in [re.search(search_pattern, f) for f in files_]
         if m is not None]
     if frames:
         return (frames[0], frames[-1])
