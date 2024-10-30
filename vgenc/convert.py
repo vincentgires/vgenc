@@ -1,6 +1,7 @@
 import os
 import tempfile
 import shutil
+from tempfile import NamedTemporaryFile
 from subprocess import run
 from typing import Literal
 from .files import (
@@ -464,6 +465,29 @@ def convert_gif(
         output_path += '.gif'
     command.append(output_path)
     run(command)
+
+
+def concatenate(input_paths: list[str], output_path: str):
+    """Concatenate a list of files
+
+    Args:
+        input_paths: list of inputs
+        output_path: concatenated file
+    """
+    with NamedTemporaryFile() as temp_f:
+        for path in input_paths:
+            line = f"file '{os.path.abspath(path)}'\n"
+            temp_f.write(line.encode())
+        temp_f.flush()
+        command = [
+            'ffmpeg', '-y',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', temp_f.name,
+            '-c:v', 'copy',
+            '-c:a', 'copy',
+            output_path]
+        run(command)
 
 
 if __name__ == '__main__':
