@@ -135,7 +135,7 @@ if __name__ == '__main__':
                 output_path=_convert_os_path(args.output_path),
                 frame_range=(args.frame_start, args.frame_end),
                 frame_jump=args.frame_jump,
-                cut=None,
+                cut=cut,
                 fit=args.fit_size,
                 compression=args.compression,
                 data_format=args.data_format,
