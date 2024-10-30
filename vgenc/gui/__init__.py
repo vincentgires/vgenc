@@ -58,7 +58,11 @@ file_formats = {
     'TIFF': {
         'compression': 'none',
         'ext': '.tif',
-        'color_depths': ['8 bits', '16 bits integer']}}
+        'color_depths': ['8 bits', '16 bits integer']},
+    'Targa': {
+        'compression': 'none',
+        'ext': '.tga',
+        'color_depths': ['8 bits']}}
 color_depths = {
     '8 bits': (8,),
     '10 bits': (10,),
