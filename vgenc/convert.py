@@ -1,6 +1,7 @@
 import os
 import tempfile
 import shutil
+import logging
 from tempfile import NamedTemporaryFile
 from subprocess import run
 from typing import Literal
@@ -153,7 +154,7 @@ def convert_image(
         data.images.remove(image)
         return
 
-    command = ['oiiotool']
+    command = ['oiiotool', '-v']
     if rgb_only:
         command.append('-i:ch=R,G,B')
     command.append(input_path)
@@ -201,7 +202,10 @@ def convert_image(
     command.extend(['-o', output_path])
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     run(command)
-    print(f'oiiotool: {output_path}')
+    if os.path.exists(output_path):
+        print(f'{output_path} is generated.')
+    else:
+        logging.error(f'{output_path} was not able to be generated.')
 
 
 def _replace_ext(file_path: str, ext: str) -> str:
