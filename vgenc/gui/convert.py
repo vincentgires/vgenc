@@ -4,7 +4,6 @@
 # TODO: image preview
 
 import os
-import re
 from tkinter import (
     Tk, Listbox, Entry, Button, Frame, LabelFrame, StringVar, IntVar,
     OptionMenu, Checkbutton, PhotoImage)
