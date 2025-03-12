@@ -40,8 +40,9 @@ ffmpeg_color_options = {
             'bt709': 1},
         'transfert': {
             'linear': 1,
-            'Gamma22': 4,
-            'bt709': 2}},
+            'gamma22': 4,
+            'bt709': 2,
+            'srgb': 13}},
     'libx264': {
         'colorspace': {
             'rgb': 2,
@@ -56,7 +57,8 @@ ffmpeg_color_options = {
         'transfert': {
             'linear': 1,
             'gamma22': 4,
-            'bt709': 2}},
+            'bt709': 2,
+            'srgb': 13}},
     'libx265': {
         'colorspace': {
             'rgb': 2,
@@ -72,6 +74,7 @@ ffmpeg_color_options = {
             'linear': 1,
             'gamma22': 4,
             'bt709': 2,
+            'srgb': 13,
             'pq': 16,
             'hlg': 14}},
     'libvpx-vp9': {
@@ -88,7 +91,8 @@ ffmpeg_color_options = {
         'transfert': {
             'linear': 1,
             'gamma22': 4,
-            'bt709': 2}}}
+            'bt709': 2,
+            'srgb': 13}}}
 
 temporary_ext = '.jpg'
 temporary_compression = 'jpeg:95'
