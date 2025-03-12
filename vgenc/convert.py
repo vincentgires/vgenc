@@ -28,9 +28,81 @@ ffmpeg_audio_codecs = {
     'opus': 'libopus',
     'vorbis': 'libvorbis',
     'mp3': 'libmp3lame'}
+ffmpeg_color_options = {
+    'mjpeg': {
+        'colorspace': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1},
+        'primaries': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1},
+        'transfert': {
+            'linear': 1,
+            'Gamma22': 4,
+            'bt709': 2}},
+    'libx264': {
+        'colorspace': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1,
+            'bt2020': 9},
+        'primaries': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1,
+            'bt2020': 9},
+        'transfert': {
+            'linear': 1,
+            'gamma22': 4,
+            'bt709': 2}},
+    'libx265': {
+        'colorspace': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1,
+            'bt2020': 9},
+        'primaries': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1,
+            'bt2020': 9},
+        'transfert': {
+            'linear': 1,
+            'gamma22': 4,
+            'bt709': 2,
+            'pq': 16,
+            'hlg': 14}},
+    'libvpx-vp9': {
+        'colorspace': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1,
+            'bt2020': 9},
+        'primaries': {
+            'rgb': 2,
+            'bt601': 5,
+            'bt709': 1,
+            'bt2020': 9},
+        'transfert': {
+            'linear': 1,
+            'gamma22': 4,
+            'bt709': 2}}}
 
 temporary_ext = '.jpg'
 temporary_compression = 'jpeg:95'
+
+
+def _get_ffmpeg_color_option(
+        value: str | int,
+        codec: str | None = None,
+        option: str | None = None):
+    if isinstance(value, int):
+        return value
+    if options := ffmpeg_color_options.get(codec):
+        if values := options.get(option):
+            return values.get(value)
 
 
 def convert_image(
@@ -270,6 +342,9 @@ def convert_movie(
         video_quality: int | None = None,
         video_bitrate: int | None = None,
         constrained_quality: int | None = None,
+        colorspace: str | int | None = None,
+        color_primaries: str | int | None = None,
+        color_transfer: str | int | None = None,
         pixel_format: str | None = None,
         audio_codec: str | None = None,
         audio_quality: int | None = None,
@@ -380,8 +455,8 @@ def convert_movie(
         command.extend(['-i', i])
         if '%' not in i:
             add_frame_rate_and_number(command)
+    vc = ffmpeg_video_codecs.get(video_codec, video_codec)
     if video_codec is not None:
-        vc = ffmpeg_video_codecs.get(video_codec, video_codec)
         command.extend(['-c:v', vc])
         if video_codec in ('prores', 'prores_ks', ):
             command.extend(['-vendor', 'apl0'])  # Treat the file as if it was
@@ -398,6 +473,22 @@ def convert_movie(
         command.extend(['-b:v', str(video_bitrate)])
     if pixel_format is not None:
         command.extend(['-pix_fmt', pixel_format])
+    # Color options
+    if colorspace is not None:
+        cs = _get_ffmpeg_color_option(
+            value=colorspace, codec=vc, option='colorspace')
+        if cs is not None:
+            command.extend(['-colorspace', str(cs)])
+    if color_primaries is not None:
+        cp = _get_ffmpeg_color_option(
+            value=color_primaries, codec=vc, option='primaries')
+        if cp is not None:
+            command.extend(['-color_primaries', str(cp)])
+    if color_transfer is not None:
+        ct = _get_ffmpeg_color_option(
+            value=color_transfer, codec=vc, option='transfert')
+        if ct is not None:
+            command.extend(['-color_trc', str(ct)])
     build_filter(command)
     if two_pass:
         first_pass_command = command.copy()

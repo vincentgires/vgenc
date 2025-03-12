@@ -45,6 +45,12 @@ parser.add_argument(
 parser.add_argument(
     '-cq', '--constrained-quality', required=False, type=int, metavar='number')
 parser.add_argument(
+    '--colorspace', required=False, metavar='value')
+parser.add_argument(
+    '--color-primaries', required=False, metavar='value')
+parser.add_argument(
+    '--color-transfer', required=False, metavar='value')
+parser.add_argument(
     '--pixel-format', required=False, metavar='value')
 parser.add_argument(
     '-ac', '--audio-codec', required=False, metavar='name')
