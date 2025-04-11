@@ -453,12 +453,14 @@ def convert_movie(
             tmp_dir,  _replace_ext(source_name, temporary_ext))
 
     command = ['ffmpeg']
-    if '%' in input_path[0]:
-        add_frame_rate_and_number(command)
     for i in input_path:
-        command.extend(['-i', i])
-        if '%' not in i:
+        if '%' in i:
+            # For image sequence
             add_frame_rate_and_number(command)
+        command.extend(['-i', i])
+    if all('%' not in i for i in input_path):
+        # For movie output
+        add_frame_rate_and_number(command)
     vc = ffmpeg_video_codecs.get(video_codec, video_codec)
     if video_codec is not None:
         command.extend(['-c:v', vc])
