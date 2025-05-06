@@ -123,6 +123,7 @@ def convert_image(
         frame_range: tuple[int, int] = (1, 1),
         frame_jump: int = 1,
         # oiiotool options
+        oiiotool_bin: str = 'oiiotool',
         auto_cut: bool = False,
         cut: tuple[tuple[int, int]] | None = None,
         crop: tuple[tuple[int, int]] | None = None,
@@ -230,7 +231,7 @@ def convert_image(
         data.images.remove(image)
         return
 
-    command = ['oiiotool', '-v']
+    command = [oiiotool_bin, '-v']
     if rgb_only:
         command.append('-i:ch=R,G,B')
     command.append(input_path)
