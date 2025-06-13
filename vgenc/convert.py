@@ -2,6 +2,7 @@ import os
 import tempfile
 import shutil
 import logging
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from subprocess import run
 from typing import Literal
@@ -333,6 +334,32 @@ def convert_tx(
     command.extend(['-o', tx_path])
     run(command)
     return tx_path
+
+
+def write_ffmpeg_sendcmd(
+        frame_data: dict[int, str],
+        frame_rate: int,
+        output_path: str):
+    """Generate an ffmpeg sendcmd file for dynamic drawtext
+    """
+    dt = 1 / frame_rate  # frame time in seconds
+
+    def escape_text(text):
+        return text.replace('\\', '\\\\').replace(':', '\\:')
+
+    lines = []
+    for frame_num, text in sorted(frame_data.items()):
+        # ts = f'{frame_num * dt:.6f}'  # timestamp with microseconds
+        # Offset by half a frame so the text appears visible on the intended
+        # frame. FFmpeg applies `sendcmd` changes from the given timestamp, not
+        # before. This ensures the text is visible exactly when the frame
+        # starts.
+        ts = f'{max((frame_num - 0.5) * dt, 0):.6f}'
+        safe_text = escape_text(text)
+        line = f"{ts} drawtext reinit text='{safe_text}';"
+        lines.append(line)
+    output_path = Path(output_path)
+    output_path.write_text('\n'.join(lines), encoding='utf-8')
 
 
 def convert_movie(
