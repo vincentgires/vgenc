@@ -153,6 +153,19 @@ def create_text_strip(
     return strip
 
 
+def _expand_text_ranges(
+        text_ranges: list[tuple[int, int, str]]) -> list[tuple[int, int, str]]:
+    """Expand '{frame}' in text ranges"""
+    result = []
+    for start, end, text in text_ranges:
+        if '{frame}' in text:
+            for frame in range(start, end):
+                result.append((frame, frame + 1, text.format(frame=frame)))
+        else:
+            result.append((start, end, text))
+    return result
+
+
 def create_text_strips_by_ranges(
         scene: bpy.types.Scene,
         text_ranges: list[tuple[int, int, str]],
@@ -168,6 +181,7 @@ def create_text_strips_by_ranges(
         text_ranges: list of tuples (start_frame, end_frame, text)
     """
     strips = []
+    text_ranges = _expand_text_ranges(text_ranges)
     for i, (start, end, text) in enumerate(text_ranges):
         strip = create_text_strip(
             scene=scene,

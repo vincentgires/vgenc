@@ -753,7 +753,7 @@ if __name__ == '__main__':
              'anchor_x': 'LEFT',
              'anchor_y': 'TOP'},
             {'text': [
-                (101, 150, 'range text 1'),
+                (101, 150, 'range text 1 {frame}'),
                 (150, 190, 'range text 2'),
                 (190, 190 + 1, 'range text 3')],
              'font_path': 'font.ttf',
