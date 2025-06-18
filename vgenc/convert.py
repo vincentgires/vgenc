@@ -11,6 +11,13 @@ from .files import (
 from .probe import get_image_size
 try:
     import bpy  # Can be used as backend but shouldn't be mandatory
+    from ._bpyutils import (
+        set_render_settings as set_bpy_render_settings,
+        load_image_sequence_strip as load_bpy_image_sequence_strip,
+        create_text_strips_by_ranges as create_bpy_text_strips_by_ranges,
+        create_text_strip as create_bpy_text_strip)
+    from .files import (
+        find_frame_mapping_from_hash_pattern, fill_missing_images)
 except ImportError:
     ...
 
@@ -185,11 +192,6 @@ def convert_image(
         return
 
     if use_bpy:
-        codec_attributes = {
-            'JPEG2000': 'jpeg2k_codec',
-            'OPEN_EXR': 'exr_codec',
-            'OPEN_EXR_MULTILAYER': 'exr_codec',
-            'TIFF': 'tiff_codec'}
         data = bpy.data
         image = data.images.load(input_path)
         if input_colorspace is not None:
@@ -202,31 +204,17 @@ def convert_image(
             image.save(filepath=output_path)
         else:
             scene = bpy.context.scene
-            if look is not None:
-                scene.view_settings.look = look
-            display, view = display_view
-            scene.display_settings.display_device = display
-            scene.view_settings.view_transform = view
-            image_settings = scene.render.image_settings
-            if file_format is not None:
-                image_settings.file_format = file_format.upper()
-            if color_mode is not None:
-                image_settings.color_mode = color_mode.upper()
-            elif rgb_only:
-                image_settings.color_mode = 'RGB'
-            if color_depth is not None:
-                image_settings.color_depth = str(color_depth)
-            if compression is not None:
-                image_settings.compression = compression
-            if quality is not None:
-                image_settings.quality = quality
-            if codec is not None:
-                if codec_attribute := codec_attributes.get(
-                        image_settings.file_format):
-                    setattr(image_settings, codec_attribute, codec.upper())
-            if additional_image_settings is not None:
-                for k, v in additional_image_settings.items():
-                    setattr(image_settings, k, v)
+            set_bpy_render_settings(
+                scene=scene,
+                look=look,
+                file_format=file_format,
+                color_mode=(
+                    color_mode if not None else 'RGB' if rgb_only else None),
+                color_depth=color_depth,
+                compression=compression,
+                quality=quality,
+                codec=codec,
+                additional_image_settings=additional_image_settings)
             image.save_render(filepath=output_path)
         print(f'bpy: {output_path}')
         data.images.remove(image)
@@ -393,15 +381,113 @@ def convert_movie(
         color_convert: tuple[str, str] | None = None,
         look: str | None = None,
         display_view: tuple[str, str] | None = None,
+        # bpy options
+        use_bpy: bool = False,
+        file_format: str | None = None,
+        color_mode: str | None = None,
+        color_depth: int | None = None,
+        compression: int | None = None,
+        quality: int | None = None,
+        codec: str | None = None,
+        additional_image_settings: dict | None = None,
+        resolution: tuple[int, int] | None = None,
+        scale: tuple[int, int] | None = None,
+        crop:  tuple[int, int, int, int] | None = None,
+        _keep_data: bool = False,
+        _render: bool = True,
         **_) -> None:
-    """Convert to movie using ffmpeg
+    """Convert to movie using ffmpeg or bpy
 
     Args:
         input_path:
-          set frame number with printf syntax padding (%04d, %06d, etc)
+          ffmpeg: set frame number with printf syntax padding (%04d, %06d, etc)
+          bpy: set frame number with hash pattern (###, ####, etc)
         frame_range:
           needed for missing frames, first item overrides start_number
     """
+
+    if use_bpy:
+        directory, frame_mapping = find_frame_mapping_from_hash_pattern(
+            path=input_path)
+        images = fill_missing_images(frame_mapping, *frame_range)
+        scene = bpy.data.scenes.new('Convert')
+        channel = 1
+        strip = load_bpy_image_sequence_strip(
+            scene=scene,
+            directory=directory,
+            images=images,
+            frame_range=frame_range,
+            channel=channel,
+            colorspace=input_colorspace)
+        if scale is not None:
+            strip.transform.scale_y, strip.transform.scale_x = scale
+        if crop is not None:
+            left, right, top, bottom = crop
+            strip.crop.min_x = left
+            strip.crop.max_x = right
+            strip.crop.max_y = top
+            strip.crop.min_y = bottom
+        set_bpy_render_settings(
+            scene=scene,
+            look=look,
+            file_format=file_format,
+            color_mode=color_mode,
+            color_depth=color_depth,
+            compression=compression,
+            quality=quality,
+            codec=codec,
+            additional_image_settings=additional_image_settings,
+            resolution=resolution)
+        if frame_rate is not None:
+            scene.render.fps = frame_rate
+            scene.render.fps_base = 1
+        fonts = []
+        if draw_text is not None:
+            for text_data in draw_text:
+                if font_path := text_data.get('font_path'):
+                    font = bpy.data.fonts.load(font_path)
+                    fonts.append(font)
+                else:
+                    font = None
+                channel += 1
+                text = text_data.get('text')
+                if isinstance(text, list):
+                    create_bpy_text_strips_by_ranges(
+                        scene=scene,
+                        text_ranges=text,
+                        channel=channel,
+                        location=text_data.get('location'),
+                        font_size=text_data.get('font_size'),
+                        color=text_data.get('color'),
+                        font=font,
+                        anchor_x=text_data.get('anchor_x'),
+                        anchor_y=text_data.get('anchor_y'))
+                else:
+                    create_bpy_text_strip(
+                        scene=scene,
+                        text=text,
+                        frame_range=(frame_range[0], frame_range[1] + 1),
+                        channel=channel,
+                        location=text_data.get('location'),
+                        font_size=text_data.get('font_size'),
+                        color=text_data.get('color'),
+                        font=font,
+                        anchor_x=text_data.get('anchor_x'),
+                        anchor_y=text_data.get('anchor_y'))
+
+        # Render
+        if output_path:
+            scene.render.filepath = output_path
+        if _render:
+            bpy.ops.render.render(animation=True, scene=scene.name)
+
+        # Delete scene
+        if not _keep_data:
+            bpy.data.scenes.remove(scene)
+            for font in fonts:
+                bpy.data.fonts.remove(font)
+
+        return
 
     if isinstance(input_path, str):
         input_path = [input_path]
@@ -640,5 +726,39 @@ if __name__ == '__main__':
              'fontcolor': 'white'}],
         video_filter={
             'scale': '1280x720',
-            'pad': 'in_w:in_h+100:0:-50'}
-    )
+            'pad': 'in_w:in_h+100:0:-50'})
+
+if __name__ == '__main__':
+    # Example with bpy:
+    convert_movie(
+        input_path='input.####.png',
+        output_path='output.####.tif',
+        frame_range=(101, 200),
+        input_colorspace='Raw',
+        display_view=('None', 'Raw'),
+        use_bpy=True,
+        scale=(0.940, 0.940),
+        crop=(0, 0, 28, 28),
+        resolution=(1920, 1020),
+        file_format='TIFF',
+        color_mode='RGB',
+        color_depth=8,
+        additional_image_settings={'tiff_codec': 'NONE'},
+        draw_text=[
+            {'text': 'fixed text',
+             'font_path': 'font.ttf',
+             'font_size': 20,
+             'location': (0.0, 1.0),
+             'color': (1.0, 1.0, 1.0, 1.0),
+             'anchor_x': 'LEFT',
+             'anchor_y': 'TOP'},
+            {'text': [
+                (101, 150, 'range text 1'),
+                (150, 190, 'range text 2'),
+                (190, 190 + 1, 'range text 3')],
+             'font_path': 'font.ttf',
+             'font_size': 20,
+             'location': (0.0, 0.0),
+             'color': (1.0, 1.0, 1.0, 1.0),
+             'anchor_x': 'LEFT',
+             'anchor_y': 'BOTTOM'}])

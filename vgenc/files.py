@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from subprocess import run
 from typing import Literal
 from .probe import get_image_size
@@ -97,3 +98,57 @@ def generate_missing_frames(
                     target_filepath])
         missing_files.append(target_filepath)
     return missing_files
+
+
+def find_frame_mapping_from_hash_pattern(
+        path: str | Path) -> tuple[str, dict[int, Path]]:
+    path = Path(path)
+    dirname = path.parent
+    basename = path.name
+
+    # Match hash pattern (e.g. ####) to find:
+    # - prefix
+    # - suffix
+    # - number of digits
+    m = re.match(r'(.*?)(#+)(\..*)', basename)
+    if not m:
+        return
+
+    prefix, hashes, suffix = m.groups()
+    digits = len(hashes)
+
+    frame_pattern = re.compile(
+        rf'^{re.escape(prefix)}(\d{{{digits}}}){re.escape(suffix)}$')
+    frame_map = {}
+
+    for file in sorted(dirname.iterdir()):
+        if file.is_file():
+            match = frame_pattern.match(file.name)
+            if match:
+                frame_num = int(match.group(1))
+                frame_map[frame_num] = file.name
+
+    return dirname, frame_map
+
+
+def fill_missing_images(
+        frame_mapping: dict[int, str], start: int, end: int) -> list[str]:
+    """
+    Return a list of images for frames in range(start, end),
+    filling missing frames with the nearest available frame's filename.
+    """
+    available_frames = sorted(frame_mapping.keys())
+    filled = []
+    for i in range(start, end + 1):
+        if i in frame_mapping:
+            filled.append(frame_mapping[i])
+        else:
+            nearest = min(available_frames, key=lambda x: abs(x - i))
+            filled.append(frame_mapping[nearest])
+    return filled
+
+
+if __name__ == '__main__':
+    path = '/path/file.####.png'
+    directory, frame_mapping = find_frame_mapping_from_hash_pattern(path)
+    images = fill_missing_images(frame_mapping, *(101, 200))
