@@ -418,7 +418,8 @@ def convert_movie(
             images=images,
             frame_range=frame_range,
             channel=channel,
-            colorspace=input_colorspace)
+            colorspace=input_colorspace,
+            set_scene_resolution=False if resolution is None else True)
         if scale is not None:
             strip.transform.scale_y, strip.transform.scale_x = scale
         if crop is not None:
