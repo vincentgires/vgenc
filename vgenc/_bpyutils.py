@@ -77,7 +77,7 @@ def set_render_settings(
 
 def set_scene_resolution_from_image_strip(
         scene: bpy.types.Scene,
-        strip: bpy.types.TextStrip):
+        strip: 'bpy.types.TextStrip'):
     if strip.type != 'IMAGE':
         return
     first_elem = strip.elements[0]
@@ -148,8 +148,12 @@ def create_text_strip(
     strip.color = color
     if font is not None:
         strip.font = font
-    strip.anchor_x = anchor_x
-    strip.anchor_y = anchor_y
+    try:
+        strip.anchor_x = anchor_x
+        strip.anchor_y = anchor_y
+    except Exception:
+        strip.align_x = anchor_x
+        strip.align_y = anchor_y
     return strip
 
 
