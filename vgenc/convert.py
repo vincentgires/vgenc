@@ -207,6 +207,7 @@ def convert_image(
             set_bpy_render_settings(
                 scene=scene,
                 look=look,
+                display_view=display_view,
                 file_format=file_format,
                 color_mode=(
                     color_mode if not None else 'RGB' if rgb_only else None),
@@ -434,6 +435,7 @@ def convert_movie(
         set_bpy_render_settings(
             scene=scene,
             look=look,
+            display_view=display_view,
             file_format=file_format,
             color_mode=color_mode,
             color_depth=color_depth,
