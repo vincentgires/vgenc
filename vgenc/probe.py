@@ -2,6 +2,7 @@ from subprocess import run, PIPE
 import subprocess
 import platform
 import json
+import re
 
 startupinfo = None
 if platform.system() == 'Windows':
@@ -38,7 +39,17 @@ def get_image_size(input_path: str) -> tuple[int, int]:
     command = ['iinfo', input_path]
     output = run(
         command, check=True, stdout=PIPE, startupinfo=startupinfo).stdout
-    x, y = output.decode().split(':')[1].split(',')[0].split('x')
+    # Output format:
+    # '/path/to/file.jpg : WIDTH x HEIGHT, additional info...'
+    # We want to extract WIDTH and HEIGHT numbers separated by 'x'.
+    # The 'x' inside the file name (e.g. 'text1x2') should not be matched.
+    # To avoid false matches, we look for the pattern "number x number" that is
+    # immediately followed by a comma ',' using (?=,).
+    # This ensures we extract resolution and not random parts of the file name.
+    re_match = re.search(r'(\d+)\s*x\s*(\d+)(?=,)', output.decode())
+    if re_match is None:
+        return
+    x, y = re_match.groups()
     return int(x), int(y)
 
 
