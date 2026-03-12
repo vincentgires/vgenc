@@ -36,7 +36,7 @@ def get_movie_duration(input_path: str, stream_index: int = 0) -> int:
 
 
 def get_image_size(input_path: str) -> tuple[int, int]:
-    command = ['iinfo', input_path]
+    command = ['oiiotool', '--info', input_path]
     output = run(
         command, check=True, stdout=PIPE, startupinfo=startupinfo).stdout
     # Output format:
@@ -78,7 +78,7 @@ def get_metadata_from_image(input_path: str) -> dict:
             return value[1:-1]
         return value
 
-    command = ['iinfo', '-v', input_path]
+    command = ['oiiotool', '--info', '-v', input_path]
     output = run(
         command, check=True, stdout=PIPE, startupinfo=startupinfo).stdout
     return {
