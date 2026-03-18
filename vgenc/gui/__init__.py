@@ -73,22 +73,22 @@ color_depths = {
 view_transforms = {
     'Rec. 709': (
         'Rec.1886 Rec.709',
-        'ACES 1.0 - SDR Video'),
+        'ACES 1.0'),
     'Rec. 2020': (
         'Rec.1886 Rec.2020',
-        'ACES 1.1 - SDR Video (Rec.709 lim)'),
-    'Rec. 2100': (
+        'ACES 1.1'),
+    'Rec. 2100 PQ': (
         'Rec.2100-PQ',
-        'ACES 1.1 - HDR Video (1000 nits & Rec.2020 lim)'),
-    'P3-DCI': (
-        'P3-DCI',
-        'ACES 1.1 - SDR Cinema (D65 sim on DCI)'),
-    'DCDM': (
-        'XYZ',
-        'DCDM'),
+        'ACES 2.0 HDR 1000'),
+    'Rec. 2100 HLG': (
+        'Rec.2100-HLG',
+        'ACES 2.0 HDR 1000'),
+    'Cinema': (
+        'Cinema',
+        'ACES 1.0'),
     'sRGB': (
         'sRGB',
-        'ACES 1.0 - SDR Video')}
+        'ACES 1.0')}
 movie_containers = {
     'MPEG-4': {
         'ext': '.mp4',
