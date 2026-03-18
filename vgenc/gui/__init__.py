@@ -5,7 +5,7 @@ input_colorspaces = [
     'ACES2065-1',  # Default one
     'ACEScg',
     'Linear sRGB',
-    'sRGB - Texture']
+    'sRGB Encoded']
 resolutions = {
     '2k Full': {
         'cut': (2048, 1080)},
