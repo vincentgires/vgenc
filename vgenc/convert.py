@@ -204,6 +204,7 @@ def convert_image(
             image.save(filepath=output_path)
         else:
             scene = bpy.context.scene
+            scene.render.image_settings.media_type = 'IMAGE'
             set_bpy_render_settings(
                 scene=scene,
                 look=look,
@@ -432,6 +433,7 @@ def convert_movie(
             strip.crop.max_x = right
             strip.crop.max_y = top
             strip.crop.min_y = bottom
+        scene.render.image_settings.media_type = 'VIDEO'
         set_bpy_render_settings(
             scene=scene,
             look=look,
