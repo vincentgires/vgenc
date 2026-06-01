@@ -31,19 +31,17 @@ def set_render_settings(
         scene: bpy.types.Scene,
         look: str | None = None,
         display_view: tuple[str, str] | None = None,
+        media_type: str | None = None,
         file_format: str | None = None,
         color_mode: str | None = None,
         color_depth: int | None = None,
         compression: int | None = None,
         quality: int | None = None,
+        container: str | None = None,
         codec: str | None = None,
+        output_quality: str | None = None,
         additional_image_settings: dict | None = None,
         resolution: tuple[int, int] | None = None):
-    codec_attributes = {
-        'JPEG2000': 'jpeg2k_codec',
-        'OPEN_EXR': 'exr_codec',
-        'OPEN_EXR_MULTILAYER': 'exr_codec',
-        'TIFF': 'tiff_codec'}
     if look is not None:
         scene.view_settings.look = look
     if display_view is not None:
@@ -51,6 +49,8 @@ def set_render_settings(
         scene.display_settings.display_device = display
         scene.view_settings.view_transform = view
     image_settings = scene.render.image_settings
+    if media_type is not None:
+        image_settings.media_type = media_type
     if file_format is not None:
         image_settings.file_format = file_format.upper()
     if color_mode is not None:
@@ -61,10 +61,12 @@ def set_render_settings(
         image_settings.compression = compression
     if quality is not None:
         image_settings.quality = quality
+    if container is not None:
+        scene.render.ffmpeg.format = container
     if codec is not None:
-        if codec_attribute := codec_attributes.get(
-                image_settings.file_format):
-            setattr(image_settings, codec_attribute, codec.upper())
+        scene.render.ffmpeg.codec = codec
+    if output_quality is not None:
+        scene.render.ffmpeg.constant_rate_factor = output_quality
     if additional_image_settings is not None:
         for k, v in additional_image_settings.items():
             setattr(image_settings, k, v)
@@ -101,10 +103,12 @@ def load_image_sequence_strip(
         set_scene_resolution=False):
     if not scene.sequence_editor:
         scene.sequence_editor_create()
-    sequences = scene.sequence_editor.sequences
+    if bpy.context.workspace.sequencer_scene is None:
+        bpy.context.workspace.sequencer_scene = scene
+    strips = scene.sequence_editor.strips
     first_frame = images[0]
     start, end = frame_range
-    strip = sequences.new_image(
+    strip = strips.new_image(
         name=first_frame,
         filepath=normpath(os.path.join(directory, first_frame)),
         channel=channel,

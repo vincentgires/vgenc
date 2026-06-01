@@ -15,7 +15,8 @@ try:
         set_render_settings as set_bpy_render_settings,
         load_image_sequence_strip as load_bpy_image_sequence_strip,
         create_text_strips_by_ranges as create_bpy_text_strips_by_ranges,
-        create_text_strip as create_bpy_text_strip)
+        create_text_strip as create_bpy_text_strip,
+        normpath as bpy_normpath)
     from .files import (
         find_frame_mapping_from_hash_pattern, fill_missing_images)
 except ImportError:
@@ -204,11 +205,11 @@ def convert_image(
             image.save(filepath=output_path)
         else:
             scene = bpy.context.scene
-            scene.render.image_settings.media_type = 'IMAGE'
             set_bpy_render_settings(
                 scene=scene,
                 look=look,
                 display_view=display_view,
+                media_type='IMAGE',
                 file_format=file_format,
                 color_mode=(
                     color_mode if not None else 'RGB' if rgb_only else None),
@@ -406,7 +407,9 @@ def convert_movie(
         color_depth: int | None = None,
         compression: int | None = None,
         quality: int | None = None,
+        container: str | None = None,
         codec: str | None = None,
+        output_quality: str | None = None,
         additional_image_settings: dict | None = None,
         resolution: tuple[int, int] | None = None,
         scale: tuple[int, int] | None = None,
@@ -448,17 +451,18 @@ def convert_movie(
             strip.crop.max_x = right
             strip.crop.max_y = top
             strip.crop.min_y = bottom
-        scene.render.image_settings.media_type = 'VIDEO'
         set_bpy_render_settings(
             scene=scene,
             look=look,
             display_view=display_view,
-            file_format=file_format,
+            media_type='VIDEO',
+            container=container,
             color_mode=color_mode,
             color_depth=color_depth,
             compression=compression,
             quality=quality,
             codec=codec,
+            output_quality=output_quality,
             additional_image_settings=additional_image_settings,
             resolution=resolution)
         if frame_rate is not None:
@@ -500,7 +504,7 @@ def convert_movie(
 
         # Render
         if output_path:
-            scene.render.filepath = output_path
+            scene.render.filepath = bpy_normpath(output_path)
         if _render:
             bpy.ops.render.render(animation=True, scene=scene.name)
 
