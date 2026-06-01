@@ -352,6 +352,21 @@ def write_ffmpeg_sendcmd(
     output_path.write_text('\n'.join(lines), encoding='utf-8')
 
 
+def add_movie_metadata(path: str, metadata: dict):
+    command = [
+        'ffmpeg', '-i', path,
+        '-c', 'copy',
+        '-movflags', 'use_metadata_tags']
+    for k, v in metadata.items():
+        if v is not None:
+            command.extend(['-metadata', f'{k}={v}'])
+    path_, ext = os.path.splitext(path)
+    tmp_output = f'{path_}.metadata{ext}'
+    command.append(tmp_output)
+    run(command)
+    os.replace(tmp_output, path)
+
+
 def convert_movie(
         input_path: str | list[str],
         output_path: str,
@@ -494,6 +509,10 @@ def convert_movie(
             bpy.data.scenes.remove(scene)
             for font in fonts:
                 bpy.data.fonts.remove(font)
+
+        # Metadata
+        if metadata is not None:
+            add_movie_metadata(path=output_path, metadata=metadata)
 
         return
 
