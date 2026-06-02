@@ -401,6 +401,7 @@ def convert_movie(
         display_view: tuple[str, str] | None = None,
         # bpy options
         use_bpy: bool = False,
+        frame_step: int = 1,
         working_colorspace: str | None = None,
         file_format: str | None = None,
         color_mode: str | None = None,
@@ -430,7 +431,8 @@ def convert_movie(
     if use_bpy:
         directory, frame_mapping = find_frame_mapping_from_hash_pattern(
             path=input_path)
-        images = fill_missing_images(frame_mapping, *frame_range)
+        images = fill_missing_images(
+            frame_mapping, *frame_range, hold=frame_step)
         scene = bpy.data.scenes.new('Convert')
         if working_colorspace is not None:
             scene.sequencer_colorspace_settings.name = working_colorspace

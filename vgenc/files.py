@@ -132,19 +132,31 @@ def find_frame_mapping_from_hash_pattern(
 
 
 def fill_missing_images(
-        frame_mapping: dict[int, str], start: int, end: int) -> list[str]:
+        frame_mapping: dict[int, str],
+        start: int,
+        end: int,
+        hold: int = 1) -> list[str]:
+    """Build a frame sequence from an image sequence
+
+    Each frame is repeated according to `hold`.
+    Missing frames are replaced by the nearest available one.
     """
-    Return a list of images for frames in range(start, end),
-    filling missing frames with the nearest available frame's filename.
-    """
+    if hold < 1:
+        raise ValueError('hold must be >= 1')
+
     available_frames = sorted(frame_mapping.keys())
     filled = []
+
     for i in range(start, end + 1):
-        if i in frame_mapping:
-            filled.append(frame_mapping[i])
+        frame_index = (i - start) // hold
+        target = start + frame_index * hold
+
+        if target in frame_mapping:
+            filled.append(frame_mapping[target])
         else:
-            nearest = min(available_frames, key=lambda x: abs(x - i))
+            nearest = min(available_frames, key=lambda x: abs(x - target))
             filled.append(frame_mapping[nearest])
+
     return filled
 
 
