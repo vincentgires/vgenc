@@ -140,12 +140,12 @@ def create_text_strip(
     if not scene.sequence_editor:
         scene.sequence_editor_create()
     start, end = frame_range
-    strip = scene.sequence_editor.sequences.new_effect(
+    strip = scene.sequence_editor.strips.new_effect(
         name=name,
         type='TEXT',
         channel=channel,
         frame_start=start,
-        frame_end=end)
+        length=end - start)
     strip.text = text
     strip.location = location
     strip.font_size = font_size
