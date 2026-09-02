@@ -18,6 +18,7 @@ def batch_convert_image(
         data_format: str,
         color_depth: int,
         input_colorspace: str,
+        look: str,
         display_view: tuple[str, str]):
     frame_info = get_frame_info(input_path)
     if os.path.splitext(output_path)[1] == '.j2c':
@@ -32,6 +33,7 @@ def batch_convert_image(
             input_path=input_path,
             output_path=tmp_output,
             input_colorspace=input_colorspace,
+            look=look,
             display_view=display_view,
             cut=cut,
             fit=fit,
@@ -45,6 +47,7 @@ def batch_convert_image(
             input_path=tmp_output,
             output_path=output_path,
             input_colorspace='Raw',
+            look=look,
             display_view=('None', 'Raw'),
             image_sequence=True,
             frame_range=frame_range,
@@ -99,6 +102,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--input-colorspace', required=False, metavar='name')
     parser.add_argument(
+        '--look', required=False, metavar='name')
+    parser.add_argument(
         '--display-view', required=True, nargs=2, metavar=('display', 'view'))
     parser.add_argument(
         '--cut-size', required=False, type=int, nargs=2, metavar=('x', 'y'))
@@ -131,6 +136,7 @@ if __name__ == '__main__':
                 data_format=args.data_format,
                 color_depth=args.color_depth,
                 input_colorspace=args.input_colorspace,
+                look=args.look,
                 display_view=args.display_view)
         case _:
             print('No command are specified')
