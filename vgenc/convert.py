@@ -380,6 +380,7 @@ def convert_movie(
         video_quality: int | None = None,
         video_bitrate: int | None = None,
         constrained_quality: int | None = None,
+        preset: str | None = None,
         colorspace: str | int | None = None,
         color_primaries: str | int | None = None,
         color_transfer: str | int | None = None,
@@ -626,6 +627,8 @@ def convert_movie(
         command.extend(['-b:v', str(video_bitrate)])
     if pixel_format is not None:
         command.extend(['-pix_fmt', pixel_format])
+    if preset is not None:
+        command.extend(['-preset', preset])
     # Color options
     if colorspace is not None:
         cs = _get_ffmpeg_color_option(
